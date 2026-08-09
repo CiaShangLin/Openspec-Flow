@@ -1,0 +1,442 @@
+# Flow Skills 共用規範
+
+flow-discuss / flow-apply / flow-verify / flow-finish 四個 skill 的單一規範來源。
+規範調整時只改此檔，四個 skill 同步生效。
+
+## 0. 提問協定（所有 flow skill 適用）
+
+flow 系列會在多種 AI 環境執行（Claude Code、Codex 等），各環境的提問工具能力不同。
+本節規範**提問的語意**，各環境依自身能力決定呈現方式，兩者分開。
+
+### 0.1 語意規範（所有環境一致）
+
+任何決策點提問都必須滿足四條：
+
+1. **選項必須列全**——不得丟開放式問題讓用戶自己猜要回什麼
+2. **必須標出預設值**——哪些選項是預設，一眼可見
+3. **必須聲明單選或多選**
+4. **必須允許自然語言覆寫**——用戶可以不照選項回答，直接描述要改的部分
+
+### 0.2 呈現方式（依當前環境的能力判斷）
+
+```
+單選，且選項數 ≤ 當前結構化提問工具的實際上限 → 用該工具
+其餘情況（多選、超過上限、無此類工具）        → 編號清單
+```
+
+**上限不得寫死成數字**：Claude Code 的 AskUserQuestion 上限為 4 個選項，
+其他環境的結構化提問工具上限可能更低。一律以「當前工具的實際上限」判斷，
+不得把某一環境的限制寫進規範。
+
+編號清單格式：
+
+```
+❓ 這次驗收要執行哪些項目？
+  1) 單元測試    ←預設
+  2) 文件註解    ←預設
+  3) code-review ←預設
+  4) mermaid 架構圖
+  5) usecase 文件
+回覆：數字多選 `1,3`／`0` 套預設／或描述要改的部分
+```
+
+### 0.3 回覆語法
+
+| 回覆 | 意義 |
+|---|---|
+| `2` | 單選，選第 2 項 |
+| `1,3` | 多選（全形逗號、頓號、空白分隔皆須接受） |
+| `0` | 套用全部預設（別名：`預設`／`default`／`d`） |
+| 自然語言 | 描述要改的部分，例如「3 只跑 ngs-code-review」 |
+
+**為何用 `0` 而非字母**：注音／倉頡等中文輸入法下打英文字母需切換輸入法，
+違反「少操作」的目的；`0` 與選項編號同一輸入系統，也不佔用正常選項編號。
+多數聊天介面無法送出空訊息，所以不採用「直接 Enter」。
+
+**`0` 的精確語意**：選取所有標記為預設的項目，**不是全選**。
+
+### 0.4 安全預設
+
+涉及**破壞性操作**的問題（丟棄分支、覆蓋既有檔案、刪除 worktree 等），
+預設值只能是保留／取消／停止這類安全選項，不得把破壞性操作納入 `0` 的範圍。
+
+### 0.5 邊界情況
+
+回覆為非法編號、超出範圍、或數字與自然語言混雜且語意衝突時，
+**重問一次並指出問題所在**，不得自行猜測用戶意圖。
+
+### 0.6 適用邊界
+
+本協定**只適用於決策點**——選項可窮舉、且答案會改變接下來行為的提問。
+
+| 適用（套協定） | 不適用（維持自由對話） |
+|---|---|
+| flow-discuss：模糊／明確分流、type 三選一、是否引入 brainstorming、討論是否完畢 | 「這個功能要解決什麼問題？」這類開放式提問 |
+| flow-apply：branch／worktree、worktree 建立後如何進入（同 session 切過去／新開 session）、分支已存在怎麼辦、是否同步文件 | brainstorming／grill-me 內部的追問 |
+| flow-verify：開場項目、找不到工具時的二選一 | 需求細節的來回釐清 |
+| flow-finish：合併／PR／保留／丟棄、是否已合併 | |
+
+**NEVER 把自由討論硬套成編號選單**——那會毀掉 flow-discuss 的探索深度。
+
+## 1. 分支命名規範
+
+依 change 類型決定前綴，後半段使用 openspec change 的 kebab-case 名稱：
+
+| 類型 | 分支名 | 範例 |
+|---|---|---|
+| feature（新需求） | `feature/<change-name>` | `feature/cloud-record-page` |
+| bug-fix（bug 修復） | `bug-fix/<change-name>` | `bug-fix/m3u8-parse-crash` |
+| refactor（重構） | `refactor/<change-name>` | `refactor/extract-download-state-machine` |
+
+## 2. 驗收清單
+
+flow-verify 開場一次問完，5 個項目（多選，依第 0 節提問協定呈現），
+預設勾選狀態如下：
+
+| 項目 | 代號 | 預設 | 說明 |
+|---|---|---|---|
+| 單元測試 | `unit-test` | 勾選 | 依 change 修改的檔案副檔名判斷平台，分別 delegate 給對應平台的工具執行，結果合併呈現，詳見第 5 節。UI 層（Adapter/ViewHolder/DiffUtil）預設不寫、需要時先詢問——此為單一 class 類型層級的既有規則，跟本項是否整個跳過是不同層級，兩者並存。 |
+| 文件註解 | `doc-comment` | 勾選 | 為本次新增/修改的 public class 與 function 補上文件型註解（Kotlin 的 KDoc、Swift 的 DocC 等）。依平台委派，規則同第 5.2 節。 |
+| code-review | `code-review` | 勾選 | 依第 4 節設定取得可用工具供選擇，不寫死清單；執行前自動先跑 lint/format（不進勾選，詳見第 5.3 節）。放最後執行，才能連測試與文件註解一起審。 |
+| mermaid 架構圖 | `mermaid` | 不勾選 | 固定使用 `design-doc-mermaid` skill，產出至專案慣例位置（如 core 模組 `docs/diagrams/`）。 |
+| usecase 文件 | `usecase` | 不勾選 | Given-When-Then 格式，輸出至 `docs/usecases/<change-name>.md`（放 docs/ 而非 change 目錄，因 change 歸檔後會移走）。 |
+
+**「文件註解」不是平台專有名詞**：舊版稱為「KDoc」，但 KDoc 是 Kotlin 專有、
+JUnit 是 JVM 專有，與 flow 多語言共用的目標相衝。改名後涵蓋 KDoc／DocC／
+docstring／TSDoc，且不會與一般 inline 註解或 `docs/` 產出文件混淆。
+
+執行順序固定為上表由上到下，只執行被勾選的項目。開場詢問完成後，勾選結果立刻
+寫入 `.flow.yaml` 的 `verify_selected`（見第 3 節），供 flow-finish 判斷驗收完整性。
+
+usecase 格式範例：
+
+```
+## UC-01 下載完成後轉檔
+- Given: 影片已下載完成
+- When: 點擊「轉檔」按鈕
+- Then: 顯示轉檔進度，完成後產生 mp4
+```
+
+## 3. `.flow.yaml` 結構
+
+每個 change 目錄一份（`openspec/changes/<name>/.flow.yaml`），跨階段傳遞狀態：
+
+```yaml
+type: feature          # feature | bug-fix | refactor（flow-discuss 寫入）
+workspace: branch      # branch | worktree（flow-apply 寫入）
+branch: feature/cloud-record-page   # flow-apply 寫入
+base_branch: main      # flow-apply 寫入，這個 change 實際分支出去的來源分支
+verify_selected:        # flow-verify 開場詢問後寫入，記錄本次勾選了哪些項目
+  - unit-test
+  - doc-comment
+  - code-review
+verified:               # flow-verify 逐項完成後寫入
+  - unit-test
+  - doc-comment
+  - code-review
+verified_at:            # flow-verify 全部完成時寫入，供 flow-finish 判斷是否過期
+  head: <git rev-parse HEAD 的值，作為 diff 的比較基準>
+  diff_hash: <git diff <head> | git hash-object --stdin 的結果，涵蓋當時未提交的變更內容>
+```
+
+### 3.1 舊代號相容
+
+`junit` → `unit-test`、`kdoc` → `doc-comment` 為代號改名。舊 change 檔案不主動改寫、
+不要求遷移，依位置分兩類處理：
+
+- **值 alias**（`verify_selected`／`verified`）：讀取時接受新舊兩種值，
+  寫回時一律只寫 canonical（新）值。
+- **key alias**（`openspec/config.yaml` 的 `verify_tools.kdoc` → `verify_tools.doc_comment`）：
+  見第 4 節的碰撞規則。
+
+**比較前必須先 normalize**——先把讀到的值轉成 canonical 代號，再與需求集合比較：
+
+```
+normalized = normalize_aliases(verified)      # junit→unit-test, kdoc→doc-comment
+required   = {unit-test, doc-comment, code-review}
+missing    = required - normalized
+```
+
+否則會發生「先轉成新代號、卻拿舊代號集合去比對」導致三項永遠被判定為缺少。
+
+### 3.2 缺欄位的處理
+
+- 缺 `base_branch`／`verified_at` → 略過對應檢查，不報錯。
+- 缺 `verify_selected`（優化前建立的舊 change）→ fallback 為檢查 `verified`
+  （normalize 後）是否缺 `unit-test`／`doc-comment`／`code-review` 任一項，
+  缺任一項就警告，**提示但不阻擋**。
+
+### 3.3 `verified` 的本輪邊界
+
+`verified` **每輪重建、不累積**：flow-verify 開場寫入 `verify_selected` 時，
+一併清除整個 `verified`。
+
+否則會出現：第一次五項全過 → 程式碼又改了 → 第二次只勾 code-review 但中途中斷 →
+舊的 `verified` 仍在 → flow-finish 判定驗收完成而放行一個已失效的 change。
+
+若「單元測試」因環境限制（如無 Xcode）只完成部分平台，仍整項記入 `verified`，
+flow-verify 的收尾摘要須附註警告說明未執行的平台與原因（見第 5.4 節），不得
+只寫「完成」誤導人工驗收。
+
+### 3.4 `verified_at` 的過期判斷
+
+**不用單純的 `dirty` 布林值**——曾考慮過「記錄當時 `git status --porcelain`
+是否非空」，但這個比較方式在兩個方向都會出錯：
+
+- **誤報**：驗收時 dirty=true（例如 code-review 的修正還沒 commit），使用者
+  收尾前把這些修正原封不動 commit 掉 → dirty 變 false → 判定「不一致」→
+  誤報過期，而實際上程式碼內容完全沒變。
+- **漏抓**：驗收時本來就 dirty=true，之後又偷改了幾行仍未 commit → dirty
+  維持 true → 判定「一致」→ 真正的過期反而沒被抓到。
+
+**改用內容雜湊而非布林值**——多一個欄位、少一個判斷分支，且是同一組
+git 指令的自然延伸，不算過度設計：
+
+```
+verify 完成時：
+  head = git rev-parse HEAD
+  diff_hash = git diff <head> | git hash-object --stdin
+```
+
+flow-finish 比對時，以**同一個** `verified_at.head` 為基準重算：
+
+```
+git diff <verified_at.head> | git hash-object --stdin
+```
+
+- 與 `verified_at.diff_hash` 相同 → 未過期（不論這段內容此刻是仍未提交、
+  還是已被原封不動 commit 掉，都算未過期）
+- 不同 → 過期（不論是否已提交，只要跟驗收當下的內容不同就算）
+- `verified_at.head` 對應的 commit 不存在（例如被 rebase／squash 掉）→
+  略過此檢查，不報錯
+
+## 4. 專案設定（`openspec/config.yaml` 的 `flow:` 區塊）
+
+跟著專案走、不隨 skill 更新，由 flow-apply 首次使用時詢問後寫入。
+`worktree_base` 沒有固定值，預設建議值須由 flow-apply 依當前專案目錄名稱
+（`<repo名>-worktrees`）現場推斷，不可寫死任何專案名稱：
+
+```yaml
+flow:
+  worktree_base: ../<repo名>-worktrees   # 例如專案目錄為 avnight，推斷為 ../avnight-worktrees
+```
+
+### 4.1 `verify_tools`：工具物件清單
+
+三個 step（`unit_test`／`doc_comment`／`code_review`）共用同一種結構，
+由 flow-verify 首次使用時掃描並詢問後寫入：
+
+```yaml
+flow:
+  verify_tools:
+    unit_test:
+      - name: ngs-android-unit-testing
+        kind: skill
+        platforms: [android]
+        default: true
+    doc_comment:
+      - name: ngs-kdoc
+        kind: skill
+        platforms: [android]
+        default: true
+    code_review:
+      - name: ngs-code-review
+        kind: skill
+        platforms: [android]
+        default: true
+      - name: /code-review
+        kind: command             # 呼叫方式與 skill 不同
+        hosts: [claude-code]      # 只在此環境可用
+        internal_parallelism: true  # 自己會 spawn 子代理，見第 5.5 節
+        default: true
+```
+
+欄位語意：
+
+| 欄位 | 必填 | 語意 |
+|---|---|---|
+| `name` | 是 | 工具名稱 |
+| `kind` | 是 | `skill` \| `command`，決定呼叫方式 |
+| `platforms` | 否 | **省略或 null ＝ 適用所有偵測到的平台**；非空清單 ＝ 僅適用列出的平台；空清單 ＝ 設定錯誤，提示使用者 |
+| `hosts` | 否 | 省略 ＝ 任何環境可用；有值 ＝ 只在列出的環境可用 |
+| `default` | 否 | 省略視為 `false`；`true` 表示開場提問時預先勾選 |
+| `internal_parallelism` | 否 | `true` 表示該工具內部自己會平行委派，見第 5.5 節 |
+
+**為何需要 `kind` 與 `hosts`**：`openspec/config.yaml` 跟著 repo 進版控，但
+`/code-review`（command）、`ngs-code-review`（skill）呼叫方式不同，且不是每個
+環境都有這些工具。同事拉下 repo、或換到另一個 agent 環境時，沒有這兩個欄位
+就會直接失效。
+
+**向後相容（舊版扁平字串格式）**：優化前的設定是 `<step>.<platform>: <單一工具名稱>`
+的扁平字串（例如 `unit_test: {android: ngs-android-unit-testing}`）。讀到這種格式時，
+視為 `[{name: <工具名稱>, kind: skill, platforms: [<platform>], default: true}]`；
+不主動改寫既有檔案，下次該設定被更新寫回快取時才轉成新格式。
+
+**不做**：schema version、未知欄位處理、完整 migration 規格。這是人類會手改的
+設定檔，不是 API contract。
+
+### 4.2 新舊 key 碰撞規則
+
+canonical key（`doc_comment`）存在時一律優先；只有它不存在時才讀 legacy key
+（`kdoc`）。更新該設定並寫回 canonical 時，順手移除 legacy key。
+
+（「不主動遷移 ＋ 寫回 canonical」必然會產生兩個 key 並存的狀態，沒有優先序
+就會出現一邊讀舊值、一邊讀新值。）
+
+### 4.3 `verify_commands`：lint 指令快取
+
+lint/format 走內省路線，不走工具委派，見第 5.3 節：
+
+```yaml
+flow:
+  verify_commands:
+    lint:
+      android: <實際指令>
+      ios: <實際指令>
+```
+
+### 4.4 `verify_notes`：找不到工具時的應急說明
+
+```yaml
+flow:
+  verify_notes:
+    unit_test:
+      ios: <使用者輸入的說明文字>
+```
+
+## 5. 平台偵測與工具委派
+
+flow-verify 執行「單元測試」「文件註解」「code-review」時，不假設專案只有
+Android／Kotlin。判斷依據是 change 實際修改的檔案副檔名，而非在 config.yaml
+或 `.flow.yaml` 宣告固定的 repo 平台——這樣純 Android repo（無 `.swift` 檔案）
+永遠不會觸發以下任何平台分支，行為與導入本節前完全一致。
+
+### 5.1 平台偵測
+
+- 列出這次 change 修改的檔案（diff against `base_branch`），依副檔名分類：
+  - `.kt`／`.kts` → Kotlin（Android／commonMain 等）
+  - `.swift` → iOS
+- 同一個 change 可能同時有兩種檔案，「單元測試」等項目需分別處理兩側，結果
+  合併呈現在同一份驗收摘要裡，不拆成兩個勾選項。
+
+這套映射刻意保持寬鬆，實際歸屬由 AI 依專案脈絡判斷；未來使用時若出現不順暢
+再回頭調整，現階段不設計更精細的 language／target 兩層模型。
+
+### 5.2 委派工具（單元測試／文件註解／code-review）
+
+這三項需要語意理解，delegate 給對應工具執行，flow-verify 本身不直接下建置/測試指令：
+
+1. 讀 `openspec/config.yaml` 的 `flow.verify_tools.<step>`（見第 4.1 節），
+   過濾掉當前環境不可用的工具（依 `hosts`）與不適用於偵測到的平台的工具（依 `platforms`）。
+2. **依「覆蓋缺口」判斷是否需要掃描**——不是「全部不可用才掃描」：
+
+   ```
+   對每個 (step, 偵測到的平台) 檢查過濾後是否仍有至少一個工具覆蓋
+     有覆蓋 → 照跑
+     沒有   → 該組合單獨進入下方第 3 步的掃描流程
+   省略 platforms 的通用工具可一次覆蓋所有偵測到的平台
+   ```
+
+   若用「全部不可用才掃描」會漏掉這種情況：混合 Android／iOS 的 change 中，
+   Android 側工具仍可用、iOS 側完全沒有工具——因為「不是全部不可用」所以不觸發
+   掃描，**iOS 側的驗收就靜默消失了**。
+
+3. 有缺口 → 動態掃描目前環境可用的 skill/command，依第 0 節提問協定列出讓用戶選。
+   - 找不到任何對應工具 → 依提問協定問用戶：「現在用 `write-a-skill` 建一個正式
+     skill」或「先在 config.yaml 寫一段內嵌文字說明應急」。
+     - 選建 skill → 呼叫 `Skill(write-a-skill)`，建立完成後把工具寫入
+       `flow.verify_tools.<step>` 快取。
+     - 選內嵌文字 → 把用戶輸入的說明寫入 `flow.verify_notes.<step>.<platform>`
+       （自由文字欄位），flow-verify 依這段文字說明執行；不寫入 `verify_tools`
+       快取（沒有工具可快取），下次一樣會走這條路徑，除非之後升級成正式 skill。
+   - 選定後寫入 `flow.verify_tools.<step>`，含 `kind`／`platforms`／`hosts`。
+4. Kotlin 側維持現有作法：`unit_test` 對應 `ngs-android-unit-testing`、
+   `doc_comment` 對應 `ngs-kdoc`，是既有固定預設值，不受本節「找不到才問」規則影響，
+   不需重新詢問。
+
+### 5.3 內省查詢（lint/format）
+
+lint/format 是確定性 CLI 規則檢查，沒有 AI 工具的概念，改用內省查詢，不走
+5.2 的委派路線：
+
+1. 讀 `openspec/config.yaml` 的 `flow.verify_commands.lint.<platform>`，
+   有值就直接執行。
+2. 沒有快取值 → 對 repo 做內省查詢取得實際指令（掃描建置設定、可用 task 清單等），
+   查到就執行並寫入快取；查不到任何對應工具設定 → 視為「此 repo 未設定」，
+   靜默略過該平台的 lint，摘要中註明「lint：`<platform>` 未設定，略過」，非錯誤。
+3. 快取指令執行失敗（例如 task not found）→ 自動重新執行一次第 2 步的內省
+   查詢並更新快取，再試一次；仍失敗才依第 7 節錯誤處理原則報錯中止。
+4. lint/format 不是獨立勾選項，併入 code-review 步驟，在其他 review 工具
+   動態掃描與執行之前自動先跑，不需要用戶勾選。
+
+### 5.4 環境能力限制
+
+- 若 change 修改了某平台的檔案，但目前環境沒有對應工具鏈（例如非 macOS 或
+  未安裝 Xcode）→ 明確報告「<平台> 部分因環境限制未執行，需在 <環境> 上補跑」
+  並跳過該平台部分；其他平台照常執行完成並標記完成。
+- 這與「指令快取失效」不同，不套用 5.3 的自動重查邏輯——工具鏈本來就不
+  存在，重查沒有意義。
+- 對應 `.flow.yaml` 的 `verified` 記錄方式見第 3 節。
+
+### 5.5 多工具執行策略
+
+同一個 step 選了多個工具時：
+
+```
+可用平行子代理      → 各工具分別平行執行
+超過可用 concurrency → 分批執行（不因 slot 不足拒絕）
+無平行能力          → 循序執行
+```
+
+依**能力**判斷，不依環境名稱硬編碼——各環境是否支援平行子代理會隨版本改變。
+
+- **子代理一律唯讀、只回報 findings**：多個 review 工具若都能改檔，會併發修改
+  同一批檔案。
+- **`internal_parallelism: true` 的工具由主 agent 直接執行**，不再往外包一層，
+  且**排成獨立批次**、不與其他工具同時搶 concurrency（布林值無法得知它內部佔
+  幾個 slot，獨立批次是最省事又安全的處理）。
+
+### 5.6 工具呼叫契約
+
+flow-verify 委派工具時：
+
+- **主動把必要輸入傳進去**：fixed point ＝ `.flow.yaml` 的 `base_branch`；
+  spec ＝ 該 change 的 openspec artifacts。
+- **任何被委派的工具不得自行向使用者提問**；缺必要輸入時回報給 flow-verify，
+  由它依第 0 節提問協定統一處理，避免破壞「開場一次問完」。
+- **禁止被委派的工具執行 setup、建立輔助文件、或任何非 finding 修正的寫檔行為。**
+
+### 5.7 指令歸屬
+
+- **flow 不硬編碼任何建置／測試指令**。需要時依序解析：專案的指令設定
+  （CLAUDE.md／AGENTS.md 等）→ `config.yaml` 快取 → 委派對應 skill。
+- **NEVER 主動安裝／啟動 APP**——由 tasks 內容或用戶指示決定。
+- 指令失敗的處理順序：先套 5.3 的快取失效重查 → 再套 5.4 的環境限制跳過 →
+  兩者都不適用才依第 7 節明確報錯停下。
+
+### 5.8 NEVER
+
+- **NEVER 因為平台偵測邏輯而改變單一平台 repo 的既有驗收行為**——偵測不到
+  其他平台的檔案時，所有相關分支必須完全不觸發，執行內容與偵測邏輯導入前一致。
+
+## 6. 工具對照表（可携性）
+
+| 步驟 | 有對應機制的環境（如 Claude Code） | 無對應機制時的退化行為 |
+|---|---|---|
+| 選項詢問 | 結構化提問工具（見第 0.2 節） | 編號清單（見第 0.2 節） |
+| 多工具執行 | 平行子代理 | 循序執行（見第 5.5 節） |
+| 進入 worktree | 環境的工作目錄切換機制（Claude Code：`EnterWorktree` 帶 `path`） | `cd <worktree 路徑>`，再以 `pwd` 驗證；切不過去就改請用戶新開 session |
+| 委派 explore | Skill(openspec-explore) | 依 openspec CLI 指令照做 |
+| 委派 propose | Skill(openspec-propose) | `openspec new change` ＋ 手寫 artifacts |
+| brainstorming | Skill(superpowers:brainstorming) | 以蘇格拉底式提問代替 |
+| grill-me | Skill(grill-me) | 以決策樹逐分支追問代替 |
+| 委派 apply | Skill(openspec-apply-change) | 照 tasks.md 逐項實作 |
+| 委派 archive | Skill(openspec-archive-change) | 依 openspec CLI archive 指令照做 |
+| 委派收尾整合 | Skill(superpowers:finishing-a-development-branch) | 手動決定 merge/PR/保留/丟棄並自行清理 |
+
+## 7. 錯誤處理原則
+
+- openspec CLI 不存在或指令失敗 → 明確報錯並停下，不靜默跳過。
+- 委派的 skill 不存在（如環境未裝 superpowers）→ 告知用戶後改用退化行為。
+- flow-apply 的 metadata push 失敗（權限不足、分支保護規則等）→ 視為錯誤並中止，
+  不建立分支/worktree、不靜默略過、不自動改用其他方式繞過。
