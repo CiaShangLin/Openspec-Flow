@@ -8,10 +8,14 @@
 discuss → apply → verify → finish
 ```
 
+![OpenSpec Flow 總覽](assets/medium/openspec-flow-overview.png)
+
 這是個人 workflow 擴充，不是 OpenSpec 的官方建議流程。使用前建議先讀過
 `flow-conventions/conventions.md`，理解各 skill 共用的提問協定與設定結構。
 
 ## 目錄結構
+
+![Flow Skills 與委派關係](assets/medium/openspec-flow-skill-map.png)
 
 | 目錄 | 用途 |
 | --- | --- |
@@ -39,6 +43,8 @@ openspec init
 ```
 
 ## 設計原則
+
+![討論分流規則](assets/medium/openspec-flow-routing.png)
 
 - **平台差異寫進設定，不寫死在流程。** `flow-verify` 不需要知道每個工具的
   細節，只依 `openspec/config.yaml` 的 `verify_tools` 選對工具，讓同一套流程
