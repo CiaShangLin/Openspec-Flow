@@ -60,21 +60,19 @@ verified: []
 固定執行順序（由上到下）：
 
 1. **單元測試**（含 `unit-test` 才執行）
-   - 依 change 修改的檔案判斷平台，工具解析見 conventions 第 5.1、5.2 節。
-   - **Kotlin 側**：delegate 給 `ngs-android-unit-testing`，找出本次修改的
-     邏輯層類別（ViewModel/Repository/UseCase 等）補測試並執行對應建置任務
-     驗證通過。UI 層（Adapter/ViewHolder/DiffUtil）預設不寫，需要時先詢問
-     ——此為單一 class 類型層級的既有規則，跟整體是否勾選本項是不同層級，
-     兩者並存。
-   - **其他平台**：依 `verify_tools.unit_test` 解析出的工具執行；有覆蓋缺口
-     時依第 5.2 節掃描或走二選一流程；環境無對應工具鏈時依第 5.4 節報告
-     並跳過，不視為失敗。
+   - 依 change 修改的檔案判斷平台，依 `verify_tools.unit_test` 解析出的工具
+     執行（見 conventions 第 5.1、5.2 節）；有覆蓋缺口時依第 5.2 節掃描或
+     走二選一流程；環境無對應工具鏈時依第 5.4 節報告並跳過，不視為失敗。
+   - **委派給 `ngs-android-unit-testing` 時**：找出本次修改的邏輯層類別
+     （ViewModel/Repository/UseCase 等）補測試並執行對應建置任務驗證通過。
+     UI 層（Adapter/ViewHolder/DiffUtil）預設不寫，需要時先詢問——此為單一
+     class 類型層級的既有規則，跟整體是否勾選本項是不同層級，兩者並存。
    - 各平台結果合併呈現在同一份驗收摘要裡。任一側測試失敗 → 修到通過才算
      完成，不得跳過（環境限制導致的跳過不算失敗）。
 2. **文件註解**（含 `doc-comment` 才執行）
    - 為本次新增/修改的 public class 與 function 補上該語言的文件型註解，
-     依平台委派（Kotlin → `ngs-kdoc` 產出 KDoc；其他平台依
-     `verify_tools.doc_comment` 解析）。
+     依 `verify_tools.doc_comment` 解析出的工具執行（見 conventions 第 5.1、
+     5.2 節）。
    - 內容一律以繁體中文（zh-TW）撰寫。
    - 測試程式碼不補文件註解：單元測試與 UI 測試的類別與函式一律跳過，
      不處理也不列入摘要。
@@ -144,10 +142,8 @@ code-review 排在最後，若它的 findings 導致修改程式碼，**先前�
 
 ### 5. 收尾
 
-全部項目完成後，寫入狀態指紋供 flow-finish 判斷驗收是否過期
-（**不是簡單的 dirty 布林值**——見 conventions 第 3.4 節，布林值在「驗收後
-把修正原封不動 commit 掉」與「驗收後又偷改幾行仍未 commit」這兩種情況下都會
-判斷錯誤）：
+全部項目完成後，寫入驗收快照供人工追查驗收當下的內容（flow-finish 不會比較此快照
+來阻擋手動收尾；見 conventions 第 3.4 節）：
 
 ```yaml
 verified_at:
@@ -177,8 +173,8 @@ verified_at:
 直接 push。在分支上先歸檔，讓 spec 更新跟程式碼變更落在**同一個 PR**裡一起
 被 review、一起合併，避免 spec 與程式碼出現不同步的空窗期。
 
-正確順序：verify（本 skill）→ `/flow-finish`（archive → 合併/PR/保留/丟棄 →
-worktree 清理）。archive、push／建 PR／合併、worktree 清理都不屬於
+正確順序：verify（本 skill）→ `/flow-finish`（archive → archive/spec commit → push →
+合併/PR/保留 → worktree 清理）。archive、commit、push／建 PR／合併、worktree 清理都不屬於
 flow-verify 的職責，交給 `flow-finish` 處理。
 
 ## NEVER

@@ -71,10 +71,10 @@ flow 系列會在多種 AI 環境執行（Claude Code、Codex 等），各環境
 
 | 適用（套協定） | 不適用（維持自由對話） |
 |---|---|
-| flow-discuss：模糊／明確分流、type 三選一、是否引入 brainstorming、討論是否完畢 | 「這個功能要解決什麼問題？」這類開放式提問 |
-| flow-apply：branch／worktree、worktree 建立後如何進入（同 session 切過去／新開 session）、分支已存在怎麼辦、是否同步文件 | brainstorming／grill-me 內部的追問 |
+| flow-discuss：建議路線是否採用、type 三選一、artifact review loop（定稿／釐清／壓力測試／重新評估）、文件 commit 後是否 push | 「這個功能要解決什麼問題？」等需求釐清、explore／架構評估／grill-me 內部的追問 |
+| flow-apply：branch／worktree、worktree 建立後如何進入（同 session 切過去／新開 session）、分支已存在怎麼辦、是否同步文件、tasks 完成後要調整／建立 checkpoint／結束、commit 後是否 push、無 upstream 時是否設定並 push | 人工 review 後要調整的具體內容 |
 | flow-verify：開場項目、找不到工具時的二選一 | 需求細節的來回釐清 |
-| flow-finish：合併／PR／保留／丟棄、是否已合併 | |
+| flow-finish：驗收缺項是否繼續、未完成 tasks/artifacts 是否歸檔、合併／PR／保留、是否已合併、是否清理 | |
 
 **NEVER 把自由討論硬套成編號選單**——那會毀掉 flow-discuss 的探索深度。
 
@@ -134,9 +134,13 @@ verified:               # flow-verify 逐項完成後寫入
   - unit-test
   - doc-comment
   - code-review
-verified_at:            # flow-verify 全部完成時寫入，供 flow-finish 判斷是否過期
+verified_at:            # flow-verify 全部完成時寫入，保留為驗收紀錄
   head: <git rev-parse HEAD 的值，作為 diff 的比較基準>
   diff_hash: <git diff <head> | git hash-object --stdin 的結果，涵蓋當時未提交的變更內容>
+finish:                 # flow-finish archive 後寫入，支援 commit/push/整合續跑
+  archive_path: openspec/changes/archive/YYYY-MM-DD-<change-name>
+  synced_specs:         # 本次 archive 實際同步的主 spec 路徑
+    - openspec/specs/<capability>/spec.md
 ```
 
 ### 3.1 舊代號相容
@@ -164,7 +168,7 @@ missing    = required - normalized
 - 缺 `base_branch`／`verified_at` → 略過對應檢查，不報錯。
 - 缺 `verify_selected`（優化前建立的舊 change）→ fallback 為檢查 `verified`
   （normalize 後）是否缺 `unit-test`／`doc-comment`／`code-review` 任一項，
-  缺任一項就警告，**提示但不阻擋**。
+  缺任一項時由 flow-finish 問是否繼續，預設停止、可明確覆寫。
 
 ### 3.3 `verified` 的本輪邊界
 
@@ -178,37 +182,11 @@ missing    = required - normalized
 flow-verify 的收尾摘要須附註警告說明未執行的平台與原因（見第 5.4 節），不得
 只寫「完成」誤導人工驗收。
 
-### 3.4 `verified_at` 的過期判斷
+### 3.4 `verified_at` 的驗收快照
 
-**不用單純的 `dirty` 布林值**——曾考慮過「記錄當時 `git status --porcelain`
-是否非空」，但這個比較方式在兩個方向都會出錯：
-
-- **誤報**：驗收時 dirty=true（例如 code-review 的修正還沒 commit），使用者
-  收尾前把這些修正原封不動 commit 掉 → dirty 變 false → 判定「不一致」→
-  誤報過期，而實際上程式碼內容完全沒變。
-- **漏抓**：驗收時本來就 dirty=true，之後又偷改了幾行仍未 commit → dirty
-  維持 true → 判定「一致」→ 真正的過期反而沒被抓到。
-
-**改用內容雜湊而非布林值**——多一個欄位、少一個判斷分支，且是同一組
-git 指令的自然延伸，不算過度設計：
-
-```
-verify 完成時：
-  head = git rev-parse HEAD
-  diff_hash = git diff <head> | git hash-object --stdin
-```
-
-flow-finish 比對時，以**同一個** `verified_at.head` 為基準重算：
-
-```
-git diff <verified_at.head> | git hash-object --stdin
-```
-
-- 與 `verified_at.diff_hash` 相同 → 未過期（不論這段內容此刻是仍未提交、
-  還是已被原封不動 commit 掉，都算未過期）
-- 不同 → 過期（不論是否已提交，只要跟驗收當下的內容不同就算）
-- `verified_at.head` 對應的 commit 不存在（例如被 rebase／squash 掉）→
-  略過此檢查，不報錯
+flow-verify 完成時保存 `head` 與相對該 commit 的 `diff_hash`，讓人工需要時可以
+追查驗收當下的內容。**flow-finish 不比較這兩個值**：手動呼叫 finish 即表示使用者
+接受驗收結果，不能因內容雜湊不同額外打斷收尾。
 
 ## 4. 專案設定（`openspec/config.yaml` 的 `flow:` 區塊）
 
@@ -350,9 +328,11 @@ Android／Kotlin。判斷依據是 change 實際修改的檔案副檔名，而�
        （自由文字欄位），flow-verify 依這段文字說明執行；不寫入 `verify_tools`
        快取（沒有工具可快取），下次一樣會走這條路徑，除非之後升級成正式 skill。
    - 選定後寫入 `flow.verify_tools.<step>`，含 `kind`／`platforms`／`hosts`。
-4. Kotlin 側維持現有作法：`unit_test` 對應 `ngs-android-unit-testing`、
-   `doc_comment` 對應 `ngs-kdoc`，是既有固定預設值，不受本節「找不到才問」規則影響，
-   不需重新詢問。
+
+所有平台一視同仁，包含 Android／Kotlin：`config.yaml` 尚未設定
+`verify_tools.unit_test`／`verify_tools.doc_comment` 時，一樣走上面第 3 步的
+掃描／詢問流程（`ngs-android-unit-testing`、`ngs-kdoc` 會在掃描時被列為候選
+工具），選定後寫回快取，不特別硬編碼任何平台的預設對應。
 
 ### 5.3 內省查詢（lint/format）
 
@@ -426,13 +406,14 @@ flow-verify 委派工具時：
 | 選項詢問 | 結構化提問工具（見第 0.2 節） | 編號清單（見第 0.2 節） |
 | 多工具執行 | 平行子代理 | 循序執行（見第 5.5 節） |
 | 進入 worktree | 環境的工作目錄切換機制（Claude Code：`EnterWorktree` 帶 `path`） | `cd <worktree 路徑>`，再以 `pwd` 驗證；切不過去就改請用戶新開 session |
-| 委派 explore | Skill(openspec-explore) | 依 openspec CLI 指令照做 |
+| 委派 explore | Skill(openspec-explore) | 讀程式碼／既有 artifacts，以自由對話探索；不寫 code 或 artifacts |
 | 委派 propose | Skill(openspec-propose) | `openspec new change` ＋ 手寫 artifacts |
-| brainstorming | Skill(superpowers:brainstorming) | 以蘇格拉底式提問代替 |
+| 委派 update | Skill(openspec-update-change) | 只更新既有 planning artifacts；逐 artifact 提案並取得確認 |
+| 架構評估 | Skill(improve-codebase-architecture) | 分析模組責任、依賴與遷移選項；回報 2–3 個方向，不寫 code 或獨立文件 |
 | grill-me | Skill(grill-me) | 以決策樹逐分支追問代替 |
 | 委派 apply | Skill(openspec-apply-change) | 照 tasks.md 逐項實作 |
 | 委派 archive | Skill(openspec-archive-change) | 依 openspec CLI archive 指令照做 |
-| 委派收尾整合 | Skill(superpowers:finishing-a-development-branch) | 手動決定 merge/PR/保留/丟棄並自行清理 |
+| 委派收尾整合 | Skill(superpowers:finishing-a-development-branch) | 手動決定 merge/PR/保留；丟棄僅在使用者明確要求時依其確認流程處理 |
 
 ## 7. 錯誤處理原則
 
