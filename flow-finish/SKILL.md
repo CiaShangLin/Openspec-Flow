@@ -9,7 +9,7 @@ effort: medium
 手動觸發的最後收尾。提交尚未提交的驗收修正、歸檔並同步 spec、推送分支，最後每次
 都由使用者選擇整合方式（本地合併／建立 PR／保留分支）。
 
-開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`） 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`）取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
 `../flow-conventions/SKILL.md`，且必須讀完整份。所有決策點依其「提問協定」呈現與解析；
 取消、保留與不清理一律是預設。commit 訊息依其「commit 規則」產生，與遠端主機互動依本 skill 的
 「遠端主機判斷」一節。

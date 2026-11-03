@@ -7,27 +7,22 @@
    規劃與建檔      建工作區與實作    自動化驗收       歸檔與整合
 ```
 
-![OpenSpec Flow 總覽](assets/medium/openspec-flow-overview.png)
-
 這是個人 workflow 擴充，不是 OpenSpec 的官方建議流程。各 skills 會共用
 [`flow-conventions`](flow-conventions/SKILL.md) skill（`user-invocable: false`）的提問協定、
 `.flow.yaml` 狀態格式、commit 規則與錯誤處理；驗收專屬規則在 `flow-verify/references/`。
 
 ## 內容
 
-![Flow Skills 與委派關係](assets/medium/openspec-flow-skill-map.png)
-
 | 目錄 | 用途 |
 | --- | --- |
 | `flow-init/` | 導入與重新檢查：確認依賴、必要時執行 `openspec init`，補齊 `config.yaml` 的 context／rules／operations 與 commit 格式；可重複執行，只補差異。 |
 | `flow-discuss/` | 以自由對話理解需求，建議 explore、架構評估、proposal 或既有 change 更新路線；確認後才建立或修改 OpenSpec artifacts。 |
 | `flow-apply/` | 依 change 類型建立分支或 worktree，委派 `openspec-apply-change` 實作 tasks；遇到規格偏差或未知異常時先探索／診斷，完成後可建立語意化 checkpoint。 |
-| `flow-verify/` | 依使用者選定項目執行單元測試、文件註解與 code review，每項派獨立 subagent 並帶入對應 effort，並記錄本輪驗收結果。 |
+| `flow-verify/` | 依使用者選定項目執行單元測試、文件註解與 code review，每項派獨立 subagent 並帶入對應 effort，並記錄本輪驗收結果。review findings 列成編號清單附建議（改 code／改 spec+code／改 spec／不處理），由使用者逐條決定後才修正；中斷後若程式碼未變，可只跑剩下的項目。 |
 | `flow-finish/` | 檢查驗收、提交剩餘的驗收修正、同步 delta specs、archive change 並推送，最後每次由使用者決定本地合併、建立 PR 或保留分支；不限 GitHub，中斷後可續跑。 |
 | `flow-note/` | 開發途中的備忘錄，記到 `openspec/backlog.md`，不自動整合進其他 skill。 |
 | `flow-help/` | 導覽入口，說明各 skill 用途、觸發時機與驗收工具設定速查。 |
-| `flow-conventions/` | 所有 flow skill 共用的規範來源：提問協定、分支命名、`.flow.yaml` 結構、`config.yaml` 的 `flow:` 區塊、平台偵測與工具委派、錯誤處理原則。 |
-| `assets/` | 說明文件用的圖片素材。 |
+| `flow-conventions/` | 所有 flow skill 共用的規範（`user-invocable: false`，由其他 flow skill 載入）：提問協定、`.flow.yaml` 結構、`config.yaml` 的 `flow:` 區塊、執行前檢查、commit 規則、錯誤處理原則。分支命名在 `flow-apply`，平台偵測與驗收工具委派在 `flow-verify/references/verify-tools.md`。 |
 
 ## 使用方式
 
@@ -63,8 +58,6 @@
 專案設定。之後可隨時重跑，只會列出差異。
 
 ## 設計原則
-
-![討論分流規則](assets/medium/openspec-flow-routing.png)
 
 - **使用者表達意圖，不必先選 skill。** Flow 依目前上下文提出建議路線與理由，使用者始終可以覆寫。
 - **討論自由，交付物一致。** 探索、架構評估與壓力測試的結論，都在確認後回填 OpenSpec artifacts。

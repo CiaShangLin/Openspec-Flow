@@ -13,7 +13,7 @@ effort: low
 **不做跨 skill 自動整合**：flow-discuss / flow-finish 不會主動讀取
 backlog，記錄與消化的節奏完全由用戶掌控。
 
-開始前依 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`）「執行前檢查」的第 1、2 項（環境沒有 Skill 工具時讀同層 `../flow-conventions/SKILL.md`）確認專案已
+開始前依 `flow-conventions` skill「執行前檢查」的第 1、2 項（plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`；環境沒有 Skill 工具時讀同層 `../flow-conventions/SKILL.md`）確認專案已
 初始化 OpenSpec；未初始化就停下並建議 `/flow-init`，不自行建立 `openspec/`。
 
 ## 記錄檔

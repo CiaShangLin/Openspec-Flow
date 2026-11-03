@@ -8,7 +8,7 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
 在 openspec-apply-change 之前加上工作區準備：依類型命名分支、
 選擇 branch 或 worktree、決定如何進入 worktree。
 
-開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`） 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`）取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
 `../flow-conventions/SKILL.md`，且必須讀完整份。**本 skill 的所有決策點提問一律依 flow-conventions 的「提問協定」
 提問協定呈現與解析**：選項列全、標出預設、聲明單／多選、允許自然語言覆寫。
 

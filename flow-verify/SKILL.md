@@ -1,6 +1,6 @@
 ---
 name: flow-verify
-description: 驗收已完成實作的 openspec change。當用戶說「驗收」、「開始驗收」、「verify」或使用 /flow-verify 時觸發。開場一次問完 3 個項目（單元測試、文件註解、code-review 皆預設勾選）並標注將使用的工具，依序只執行已勾選項目，每項各自派獨立 subagent 並帶入對應 effort 以隔離 context；單元測試/文件註解依修改檔案的平台動態委派對應工具，code-review 依設定列出可用工具供選擇並自動先跑 lint/format；review 修正後會重新驗證受影響項目，最後產出驗收摘要供人工驗收參考。
+description: 驗收已完成實作的 openspec change。當用戶說「驗收」、「開始驗收」、「verify」或使用 /flow-verify 時觸發。開場一次問完 3 個項目（單元測試、文件註解、code-review 皆預設勾選）並標注將使用的工具，依序只執行已勾選項目，每項各自派獨立 subagent 並帶入對應 effort 以隔離 context；單元測試/文件註解依修改檔案的平台動態委派對應工具，code-review 依設定列出可用工具供選擇並自動先跑 lint/format，findings 列成編號清單附建議（改 code／改 spec+code／改 spec／不處理），由用戶逐條決定後才修正；review 修正後會重新驗證受影響項目；中斷後若程式碼未變可接續剩下的項目；最後產出驗收摘要供人工驗收參考。
 ---
 
 # flow-verify：驗收
@@ -8,12 +8,12 @@ description: 驗收已完成實作的 openspec change。當用戶說「驗收」
 flow-apply 完成後的自動化驗收編排。人工驗收仍由用戶進行，
 本 skill 負責跑完自動化項目並給出摘要。
 
-開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`） 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`）取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
 `../flow-conventions/SKILL.md`，且必須讀完整份。
 另外必須讀完整份本 skill 的 `references/verify-tools.md`（以下簡稱 verify-tools）：
 
 - flow-conventions 的「提問協定」：提問協定（所有提問一律依此呈現與解析）
-- flow-conventions 的「`.flow.yaml` 結構」：`.flow.yaml` 結構、代號相容、`verified` 本輪邊界
+- flow-conventions 的「`.flow.yaml` 結構」：`.flow.yaml` 結構、代號相容、`verified` 本輪邊界、`verify_progress` 中斷接續
 - verify-tools 的「驗收清單」：驗收清單與順序
 - verify-tools 的「驗收相關設定」：`verify_tools`／`verify_commands`／`verify_notes` 設定結構
 - verify-tools 的「平台偵測與工具委派」：平台偵測、工具委派、多工具執行、呼叫契約
@@ -26,6 +26,23 @@ flow-apply 完成後的自動化驗收編排。人工驗收仍由用戶進行，
 ### 1. 選定 change 與開場詢問
 
 - change 選擇邏輯同 flow-apply（指定 > 推斷 > 列出讓用戶挑）。
+- **接續檢查**：`.flow.yaml` 的 `verified`（normalize 後）非空、且是 `verify_selected`
+  的真子集時，代表上次那輪中斷了。依 flow-conventions 的「`verify_progress` 的中斷接續」
+  計算目前快照：
+  - 與 `verify_progress` 完全相同 → 先問是否接續，不問項目勾選：
+
+    ```
+    ❓ 上次驗收中斷，程式碼與當時相同。
+       已完成：單元測試、文件註解　剩下：code-review
+      1) 接續，只跑剩下的項目 ←預設
+      2) 重新開始，重新勾選項目
+    ```
+
+    選接續 → 不改寫 `verify_selected`、不清除 `verified`，照下一點做平台偵測與
+    工具解析（只解析剩下的項目），接著從第一個未完成的項目進入第 2 步。
+    選重新開始 → 照一般流程。
+  - 不同或缺 `verify_progress` → 回報一行「上次進度已失效（程式碼有變動），重新開始」，
+    照一般流程。
 - 先做平台偵測（verify-tools 的「平台偵測」）與工具解析（verify-tools 的「委派工具」），
   **在提問前就知道每個項目會用哪些工具**，才能在選項後透明標注。
 - 依提問協定（多選）一次問完 3 個項目，選項後標注將使用的工具：
@@ -45,7 +62,8 @@ flow-apply 完成後的自動化驗收編排。人工驗收仍由用戶進行，
   變成永久預設。要調整長期預設請直接編輯 `config.yaml`（見 flow-help 速查）。
 - 詢問完成後，執行任何項目之前：
   1. 把勾選結果（canonical 代號陣列）寫入 `.flow.yaml` 的 `verify_selected`
-  2. **清除整個 `verified`**（每輪重建、不累積，見 flow-conventions 的「`verified` 的本輪邊界」）
+  2. **清除整個 `verified`**（每輪重建、不累積，見 flow-conventions 的「`verified` 的本輪邊界」），
+     並更新 `verify_progress`
 
 ```yaml
 verify_selected:
@@ -58,6 +76,11 @@ verified: []
 ### 2. 依序執行已勾選的項目（完成一項就把代號寫入 `.flow.yaml` 的 `verified`）
 
 依 `verify_selected` 決定要跑哪些，未勾選的項目直接跳過，不執行也不記錄。
+
+**每次寫入或清除 `verified`（包含第 4 節的清除），都要同時更新 `verify_progress`**，
+指令見 flow-conventions 的「`verify_progress` 的中斷接續」。寫入順序是先完成檔案
+修改、再寫 `verified` 與 `verify_progress`，中斷時才不會留下「已標記完成、但快照
+不含該項修改」的狀態。
 
 #### 2.0 派工方式：每項獨立 subagent、嚴格依序
 
@@ -142,8 +165,8 @@ findings：<僅 review 工具>
      `base_branch`）與 spec（該 change 的 openspec artifacts）；被委派的工具
      不得自行提問、不得執行 setup 或寫入非 finding 修正的檔案。
    - 結果呈現見下方第 3 節。
-   - findings 逐項驗證是否成立再修正（不盲改），重大問題先回報用戶再動手。
-   - **修正後依第 4 節重新驗證。**
+   - findings 逐項驗證是否成立，依第 3.1 節分類並列成待決清單，**等用戶逐條決定後才動手**。
+   - 有修改 code 時，修正後依第 4 節重新驗證。
 
 ### 3. code-review 結果呈現
 
@@ -173,13 +196,42 @@ findings：<僅 review 工具>
 lint：ktlint 0 error；SwiftLint 未設定（略過）
 ```
 
+#### 3.1 待決清單：每條 finding 由用戶決定
+
+各工具的原始輸出呈現完之後，把所有 finding（不分來源，含判定不成立的）整理成
+一份連續編號的清單。每條先驗證是否成立，再依「這條 finding 是否改變行為」給出建議：
+
+| 建議 | 適用情況 | 處理方式 |
+|---|---|---|
+| 改 code | bug 或品質問題，行為不變（spec 已正確，或屬於 spec 不描述的實作細節，例如命名、`!!`） | 只改 code |
+| 改 spec+code | 行為要改 | 先委派 `openspec-update-change` 更新 artifacts，再改 code |
+| 改 spec | code 是對的，spec 寫錯或漏寫 | 只委派 `openspec-update-change`，不改 code |
+| 不處理 | 判定不成立，或刻意保留（例如沿用既有模組慣例） | 不改，理由記入摘要 |
+
+```
+## 待決 findings（請逐條決定）
+1.【高】DownloadRepo.kt:88 未處理的 !!          ← team-code-review, codex:rescue
+   建議：改 code — 失敗時會 crash，spec 已要求顯示錯誤訊息
+2.【中】重試次數寫死 3 次，spec 未定義上限       ← /code-review（Spec）
+   建議：改 spec — code 的行為合理，是 spec 漏寫
+3.【低】命名 mDataList → mVideoList              ← team-code-review
+   建議：不處理 — 沿用該模組既有命名
+回覆：逐條決定（如「1 改code 2 改spec 3 保留」）／`0` 全部照建議／或用自然語言說明
+```
+
+- 沒有任何 finding 時不提問，直接標記 code-review 完成。
+- 用戶回覆後依序處理：先把所有「改 spec」「改 spec+code」的條目一次委派給
+  `Skill(openspec-update-change)`（附上 finding、用戶的決定，並註明以 zh-TW 撰寫），
+  再修改 code。
+- 只有「改 spec」或「不處理」、沒有任何 code 修改時，不觸發第 4 節，直接標記 code-review 完成。
+
 ### 4. review 修正後的重新驗證
 
 code-review 排在最後，若它的 findings 導致修改程式碼，**先前已標記 verified 的
 項目就失效了**，而且**最後那批修正本身還沒被 review 過**。
 
 ```
-1. 接受 finding、動手修改前
+1. 用戶決定「改 code」或「改 spec+code」的 finding，動手修改 code 前
      → 清除 code-review 的 verified
      → 清除「本輪已勾選且會被此次修改影響」的項目的 verified
 2. 完成修改
@@ -190,7 +242,7 @@ code-review 排在最後，若它的 findings 導致修改程式碼，**先前�
 4. 不再產生需要修改的有效 finding → 才重新標記 verified
 ```
 
-第 3 步若又產生需修改的 finding，回到第 1 步。**第三輪仍有新的需修改 finding
+第 3 步若又產生 finding，依第 3.1 節再列一次待決清單由用戶決定；有修改 code 時回到第 1 步。**第三輪仍有新的需修改 finding
 時停下來回報用戶決定**，避免無限迴圈。
 
 ### 5. 收尾
@@ -212,7 +264,8 @@ verified_at:
   或「未勾選，略過」>
 - 文件註解：<補充了哪些類別/函式，或「未勾選，略過」>
 - code-review：<lint/format 結果（含未設定而略過的平台）；使用工具、發現 N 項、
-  處理結果；若有重新驗證，註明重跑了哪些項目，或「未勾選，略過」>
+  各項的決定（改 code／改 spec+code／改 spec／不處理及理由）；若有重新驗證，
+  註明重跑了哪些項目，或「未勾選，略過」>
 - 略過項目：<本次未勾選的項目清單，或「無」>
 ```
 
@@ -233,10 +286,13 @@ flow-verify 的職責，交給 `flow-finish` 處理。
 
 - **NEVER 測試未通過就標記 verified**——修到通過才算完成，不得跳過或降級為警告。
 - **NEVER 憑印象填寫驗收摘要**——每一項必須基於實際指令輸出，且反映最後一次執行結果。
-- **NEVER 盲目接受 review 建議**——逐項驗證是否成立再修正，重大問題先回報用戶。
+- **NEVER 盲目接受 review 建議**——逐項驗證是否成立，給出建議後由用戶逐條決定。
+- **NEVER 在用戶回覆待決清單前修改任何 code 或 artifacts**——即使是判定成立的高嚴重度 finding；用戶常選擇改 spec 而不是改 code。
+- **NEVER 只改 code 而略過行為改變的 spec**——finding 會改變行為時，先用 `openspec-update-change` 更新 artifacts，再改 code。
 - **NEVER 在 review 修正後沿用舊的 verified 標記**——受影響項目必須清除並重跑，
   且最終 diff 要再過一次 code-review，否則會留下「看似通過、實際已被後續修改破壞」的狀態。
-- **NEVER 累加 `verified`**——每輪驗收開場就清空重建，否則舊結果會讓 flow-finish 誤判。
+- **NEVER 累加 `verified`**——每輪驗收開場就清空重建，否則舊結果會讓 flow-finish 誤判。唯一例外是快照完全相同、且用戶選擇接續時。
+- **NEVER 在快照不同時接續上次進度**——`head` 或雜湊任一不同，已完成的項目就可能失效，必須重新開始。
 - **NEVER 為了重新驗證而執行本輪未勾選的項目**——尊重用戶的勾選範圍。
 - **NEVER 未詢問就為專案慣例預設不補測試的層級補單元測試**——例如部分專案的 UI 層；以單元測試工具或專案 `context` 的規定為準。
 - **NEVER 為測試程式碼補文件註解**——只針對正式程式碼，且一律以繁體中文撰寫。
@@ -244,7 +300,7 @@ flow-verify 的職責，交給 `flow-finish` 處理。
 - **NEVER 讓多個 review 子代理同時修改檔案**——子代理一律唯讀、只回報 findings，修正統一由主 agent 執行。
 - **NEVER 同時派出會寫檔的項目，或前一項尚未確認完成就派下一項**——單元測試可能改到正式程式碼，文件註解會改正式檔案，code-review 必須看到兩者完成後的最終 diff。
 - **NEVER 把 `internal_parallelism: true` 的工具包進 subagent**——subagent 無法再派 subagent，該工具一律由主 session 直接執行。
-- **NEVER 讓 subagent 寫入 `.flow.yaml`**——`verify_selected`、`verified`、`verified_at` 一律由主 session 依回報結果寫入。
+- **NEVER 讓 subagent 寫入 `.flow.yaml`**——`verify_selected`、`verified`、`verify_progress`、`verified_at` 一律由主 session 依回報結果寫入。
 - **NEVER 讓被委派的工具自行向用戶提問或執行 setup／寫檔**——缺輸入時回報給本 skill 統一處理（verify-tools 的「工具呼叫契約」）。
 - **NEVER 因平台偵測邏輯改變單一平台 repo 的既有驗收行為**——change 未修改其他平台檔案時，相關分支必須完全不觸發。
 - **NEVER 在因環境限制跳過部分平台時，遺漏在驗收摘要附註警告**——必須明確標註哪個平台未執行、原因為何、建議如何補跑。

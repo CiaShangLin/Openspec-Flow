@@ -36,7 +36,7 @@ flow 系列是 **編排層**，包住 openspec 系列（**文件與任務引擎*
 | `flow-init` | 導入與重新檢查：確認 openspec 與 Matt skills 已安裝、必要時執行 `openspec init`，補齊 `config.yaml` 的 context／rules／operations 與 commit 格式；可重複執行，只補差異 | 新專案第一次用 flow，或 flow 提示缺少設定／依賴時 |
 | `flow-discuss` | 需求討論：分流模糊想法（explore）與明確需求（propose），產出 openspec 文件；收尾確認後 commit + push 討論產物 | 有想法、需求、bug、重構要討論時，**一切的起點** |
 | `flow-apply` | 依 change 類型建分支（feature/、bug-fix/、refactor/）或 worktree（選 worktree 會再問要同 session 切過去或新開 session），委派實作 tasks | 討論完、要開始寫 code 時 |
-| `flow-verify` | 開場勾選驗收項目（單元測試／文件註解／code-review）後依序執行 | tasks 全部完成、要驗收時 |
+| `flow-verify` | 開場勾選驗收項目（單元測試／文件註解／code-review）後依序執行；review findings 逐條由你決定改 code、改 spec 或不處理；中斷後程式碼沒變可接續 | tasks 全部完成、要驗收時 |
 | `flow-finish` | 提交剩餘的驗收修正、歸檔 spec，每次選擇本地合併／建 PR／保留分支，清理分支與 worktree | 驗收通過、要收尾整合時 |
 | `flow-note` | 開發備忘錄：把途中發現的缺陷、被依賴卡住的待辦記到 `openspec/backlog.md`，可查看與更新狀態 | 實作中發現超出範圍的事想先記下來時，**任何階段都可用** |
 | `flow-conventions` | 共用規範（提問協定、`.flow.yaml`、commit 規則、執行前檢查等），`user-invocable: false`，由其他 flow skill 載入；驗收專屬規則在 flow-verify 的 `references/verify-tools.md` | 想查規範細節時直接閱讀 |
@@ -66,6 +66,7 @@ flow 系列是 **編排層**，包住 openspec 系列（**文件與任務引擎*
 | 「討論完了，開工吧」 | `/flow-apply <change-name>` |
 | 「上次做到一半，繼續實作」 | `/flow-apply <change-name>`（會接續未勾選的 tasks） |
 | 「code 寫完了，幫我驗收」 | `/flow-verify <change-name>` |
+| 「驗收做到一半中斷了」 | `/flow-verify <change-name>`（程式碼沒變會提議只跑剩下的項目） |
 | 「驗收過了，要合併／發 PR」 | `/flow-finish <change-name>` |
 | 「現在有哪些 change？做到哪了？」 | `openspec list`；細節看 `openspec/changes/<name>/.flow.yaml` |
 | 「實作到一半發現別的缺陷，之後再修」 | `/flow-note` 記下來，繼續原本的 Task |

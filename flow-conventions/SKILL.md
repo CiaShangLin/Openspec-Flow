@@ -101,6 +101,9 @@ verified:               # flow-verify 逐項完成後寫入
   - unit-test
   - doc-comment
   - code-review
+verify_progress:        # flow-verify 每次寫入或清除 verified 時更新，供中斷後接續
+  head: <git rev-parse HEAD 的值>
+  diff_hash: <「verify_progress 的中斷接續」定義的快照雜湊>
 verified_at:            # flow-verify 全部完成時寫入，保留為驗收紀錄
   head: <git rev-parse HEAD 的值，作為 diff 的比較基準>
   diff_hash: <git diff <head> | git hash-object --stdin 的結果，涵蓋當時未提交的變更內容>
@@ -140,7 +143,8 @@ missing    = required - normalized
 ### 2.3 `verified` 的本輪邊界
 
 `verified` **每輪重建、不累積**：flow-verify 開場寫入 `verify_selected` 時，
-一併清除整個 `verified`。
+一併清除整個 `verified`。唯一例外是「`verify_progress` 的中斷接續」：上次中斷後
+程式碼完全沒變，且使用者選擇接續時，沿用原本的 `verify_selected` 與 `verified`。
 
 否則會出現：第一次三項全過 → 程式碼又改了 → 第二次只勾 code-review 但中途中斷 →
 舊的 `verified` 仍在 → flow-finish 判定驗收完成而放行一個已失效的 change。
@@ -154,6 +158,26 @@ flow-verify 的收尾摘要須附註警告說明未執行的平台與原因（�
 flow-verify 完成時保存 `head` 與相對該 commit 的 `diff_hash`，讓人工需要時可以
 追查驗收當下的內容。**flow-finish 不比較這兩個值**：手動呼叫 finish 即表示使用者
 接受驗收結果，不能因內容雜湊不同額外打斷收尾。
+
+### 2.5 `verify_progress` 的中斷接續
+
+flow-verify 每次寫入或清除 `verified` 時，同時更新 `verify_progress`，記下當下的
+程式碼快照。下次開場時，若上次那輪沒做完，且目前快照與 `verify_progress` 完全相同，
+代表已完成的項目仍然有效，可以只跑剩下的項目。
+
+快照雜湊涵蓋已追蹤檔案的變更，以及未追蹤的新檔案（例如剛補上的測試檔），
+但排除 `.flow.yaml` 本身，否則寫入進度就會讓快照失效：
+
+```bash
+F=<FLOW_PATH，即 .flow.yaml 相對 repo 根目錄的路徑>
+{ git diff HEAD -- . ":(exclude)$F"
+  git ls-files -o --exclude-standard -- . ":(exclude)$F"
+  git ls-files -o --exclude-standard -z -- . ":(exclude)$F" | xargs -0 git hash-object
+} | git hash-object --stdin
+```
+
+`head` 或雜湊任一不同、或缺 `verify_progress`，一律視為進度失效，照一般流程重新開始。
+flow-finish 不讀這個欄位。
 
 ## 3. 專案設定（`openspec/config.yaml` 的 `flow:` 區塊）
 

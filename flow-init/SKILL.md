@@ -9,7 +9,7 @@ effort: high
 flow 系列的初始化入口。先確認依賴，再讓 `openspec/config.yaml` 具備 flow 需要的
 專案設定。新專案從頭建立；既有專案只補缺的部分。
 
-開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`）（環境沒有 Skill 工具時，改讀同層目錄的
+開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`；環境沒有 Skill 工具時，改讀同層目錄的
 `../flow-conventions/SKILL.md` 全文），會用到：
 
 - 「提問協定」（所有決策點依此呈現與解析）
