@@ -1,6 +1,7 @@
 ---
 name: flow-note
 description: 開發備忘錄。當用戶說「記一下」、「這個之後再做」、「先記到備忘錄」、「等 XX 做完再改這裡」、「看一下備忘錄」、「備忘錄有哪些」或使用 /flow-note 時觸發。把開發途中發現的缺陷或被其他功能卡住的待辦記錄到 openspec/backlog.md，供之後建立新 change 時翻閱；也支援查看清單與更新條目狀態。
+effort: low
 ---
 
 # flow-note：開發備忘錄

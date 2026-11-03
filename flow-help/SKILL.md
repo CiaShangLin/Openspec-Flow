@@ -1,6 +1,7 @@
 ---
 name: flow-help
 description: flow 系列與 openspec 系列 skill 的導覽說明。當用戶說「flow 怎麼用」、「該用哪個 flow」、「flow 系列有哪些」、「openspec 跟 flow 差在哪」、「我現在該做什麼」、「驗收工具怎麼設定」、「怎麼多加一個 code review 工具」或使用 /flow-help 時觸發。簡短說明每個 skill 的用途與使用時機，搭配情境案例協助用戶挑對 skill，並附驗收工具設定（verify_tools）速查。
+effort: low
 ---
 
 # flow-help：flow／openspec 系列導覽
@@ -32,7 +33,7 @@ flow 系列是 **編排層**，包住 openspec 系列（**文件與任務引擎*
 |---|---|---|
 | `flow-discuss` | 需求討論：分流模糊想法（explore）與明確需求（propose），產出 openspec 文件；收尾確認後 commit + push 討論產物 | 有想法、需求、bug、重構要討論時，**一切的起點** |
 | `flow-apply` | 依 change 類型建分支（feature/、bug-fix/、refactor/）或 worktree（選 worktree 會再問要同 session 切過去或新開 session），委派實作 tasks | 討論完、要開始寫 code 時 |
-| `flow-verify` | 開場勾選驗收項目（單元測試／文件註解／code-review／mermaid／usecase）後依序執行 | tasks 全部完成、要驗收時 |
+| `flow-verify` | 開場勾選驗收項目（單元測試／文件註解／code-review）後依序執行 | tasks 全部完成、要驗收時 |
 | `flow-finish` | 歸檔 spec，選擇合併／建 PR／保留／丟棄，清理分支與 worktree | 驗收通過、要收尾整合時 |
 | `flow-note` | 開發備忘錄：把途中發現的缺陷、被依賴卡住的待辦記到 `openspec/backlog.md`，可查看與更新狀態 | 實作中發現超出範圍的事想先記下來時，**任何階段都可用** |
 | `flow-conventions` | 共用規範文件（提問協定、分支命名、`.flow.yaml`、驗收工具設定等），**不是可觸發的 skill**，供其他四個引用 | 想查規範細節時直接閱讀 |

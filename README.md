@@ -21,7 +21,7 @@
 | --- | --- |
 | `flow-discuss/` | 以自由對話理解需求，建議 explore、架構評估、proposal 或既有 change 更新路線；確認後才建立或修改 OpenSpec artifacts。 |
 | `flow-apply/` | 依 change 類型建立分支或 worktree，委派 `openspec-apply-change` 實作 tasks；遇到規格偏差或未知異常時先探索／診斷，完成後可建立語意化 checkpoint。 |
-| `flow-verify/` | 依使用者選定項目執行單元測試、文件註解、code review、Mermaid 架構圖與 use case 文件，並記錄本輪驗收結果。 |
+| `flow-verify/` | 依使用者選定項目執行單元測試、文件註解與 code review，每項派獨立 subagent 並帶入對應 effort，並記錄本輪驗收結果。 |
 | `flow-finish/` | 檢查驗收與工作區、同步 delta specs、archive change、提交並推送收尾變更，最後決定本地合併、建立 PR 或保留分支；中斷後可續跑。 |
 | `flow-note/` | 開發途中的備忘錄，記到 `openspec/backlog.md`，不自動整合進其他 skill。 |
 | `flow-help/` | 導覽入口，說明各 skill 用途、觸發時機與驗收工具設定速查。 |

@@ -35,8 +35,6 @@ flow 系列會在多種 AI 環境執行（Claude Code、Codex 等），各環境
   1) 單元測試    ←預設
   2) 文件註解    ←預設
   3) code-review ←預設
-  4) mermaid 架構圖
-  5) usecase 文件
 回覆：數字多選 `1,3`／`0` 套預設／或描述要改的部分
 ```
 
@@ -90,7 +88,7 @@ flow 系列會在多種 AI 環境執行（Claude Code、Codex 等），各環境
 
 ## 2. 驗收清單
 
-flow-verify 開場一次問完，5 個項目（多選，依第 0 節提問協定呈現），
+flow-verify 開場一次問完，3 個項目（多選，依第 0 節提問協定呈現），
 預設勾選狀態如下：
 
 | 項目 | 代號 | 預設 | 說明 |
@@ -98,8 +96,6 @@ flow-verify 開場一次問完，5 個項目（多選，依第 0 節提問協定
 | 單元測試 | `unit-test` | 勾選 | 依 change 修改的檔案副檔名判斷平台，分別 delegate 給對應平台的工具執行，結果合併呈現，詳見第 5 節。UI 層（Adapter/ViewHolder/DiffUtil）預設不寫、需要時先詢問——此為單一 class 類型層級的既有規則，跟本項是否整個跳過是不同層級，兩者並存。 |
 | 文件註解 | `doc-comment` | 勾選 | 為本次新增/修改的 public class 與 function 補上文件型註解（Kotlin 的 KDoc、Swift 的 DocC 等）。依平台委派，規則同第 5.2 節。 |
 | code-review | `code-review` | 勾選 | 依第 4 節設定取得可用工具供選擇，不寫死清單；執行前自動先跑 lint/format（不進勾選，詳見第 5.3 節）。放最後執行，才能連測試與文件註解一起審。 |
-| mermaid 架構圖 | `mermaid` | 不勾選 | 固定使用 `design-doc-mermaid` skill，產出至專案慣例位置（如 core 模組 `docs/diagrams/`）。 |
-| usecase 文件 | `usecase` | 不勾選 | Given-When-Then 格式，輸出至 `docs/usecases/<change-name>.md`（放 docs/ 而非 change 目錄，因 change 歸檔後會移走）。 |
 
 **「文件註解」不是平台專有名詞**：舊版稱為「KDoc」，但 KDoc 是 Kotlin 專有、
 JUnit 是 JVM 專有，與 flow 多語言共用的目標相衝。改名後涵蓋 KDoc／DocC／
@@ -107,15 +103,6 @@ docstring／TSDoc，且不會與一般 inline 註解或 `docs/` 產出文件混�
 
 執行順序固定為上表由上到下，只執行被勾選的項目。開場詢問完成後，勾選結果立刻
 寫入 `.flow.yaml` 的 `verify_selected`（見第 3 節），供 flow-finish 判斷驗收完整性。
-
-usecase 格式範例：
-
-```
-## UC-01 下載完成後轉檔
-- Given: 影片已下載完成
-- When: 點擊「轉檔」按鈕
-- Then: 顯示轉檔進度，完成後產生 mp4
-```
 
 ## 3. `.flow.yaml` 結構
 
@@ -175,7 +162,7 @@ missing    = required - normalized
 `verified` **每輪重建、不累積**：flow-verify 開場寫入 `verify_selected` 時，
 一併清除整個 `verified`。
 
-否則會出現：第一次五項全過 → 程式碼又改了 → 第二次只勾 code-review 但中途中斷 →
+否則會出現：第一次三項全過 → 程式碼又改了 → 第二次只勾 code-review 但中途中斷 →
 舊的 `verified` 仍在 → flow-finish 判定驗收完成而放行一個已失效的 change。
 
 若「單元測試」因環境限制（如無 Xcode）只完成部分平台，仍整項記入 `verified`，
@@ -385,6 +372,10 @@ flow-verify 委派工具時：
 - **任何被委派的工具不得自行向使用者提問**；缺必要輸入時回報給 flow-verify，
   由它依第 0 節提問協定統一處理，避免破壞「開場一次問完」。
 - **禁止被委派的工具執行 setup、建立輔助文件、或任何非 finding 修正的寫檔行為。**
+- **委派 `/code-review` 時，prompt 須明確告知**：fixed point 與 spec 已由
+  flow-verify 提供，`docs/agents/issue-tracker.md` 缺失視為非必要，**略過 issue
+  查詢，不得提示或要求執行 `/setup-matt-pocock-skills`**。否則該工具預設遇到
+  缺檔會停下來叫人跑 setup，中斷「開場一次問完」的流程。
 
 ### 5.7 指令歸屬
 
@@ -405,6 +396,7 @@ flow-verify 委派工具時：
 |---|---|---|
 | 選項詢問 | 結構化提問工具（見第 0.2 節） | 編號清單（見第 0.2 節） |
 | 多工具執行 | 平行子代理 | 循序執行（見第 5.5 節） |
+| 驗收項目派工 | 每項依序派 subagent，Agent 工具帶 `effort`（見 flow-verify 第 2.0 節） | 主 session 依同樣順序直接執行 |
 | 進入 worktree | 環境的工作目錄切換機制（Claude Code：`EnterWorktree` 帶 `path`） | `cd <worktree 路徑>`，再以 `pwd` 驗證；切不過去就改請用戶新開 session |
 | 委派 explore | Skill(openspec-explore) | 讀程式碼／既有 artifacts，以自由對話探索；不寫 code 或 artifacts |
 | 委派 propose | Skill(openspec-propose) | `openspec new change` ＋ 手寫 artifacts |

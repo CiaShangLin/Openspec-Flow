@@ -1,6 +1,7 @@
 ---
 name: flow-finish
 description: 使用者手動完成 OpenSpec change、歸檔，並在最後決定本地合併、建立 PR 或保留分支時使用。觸發語句包含「完成這個 change」、「收尾」、「finish」、「準備合併」、「歸檔」或 /flow-finish。
+effort: medium
 ---
 
 # flow-finish：完成 change
