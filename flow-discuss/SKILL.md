@@ -7,9 +7,10 @@ description: Use when 使用者要求開始或繼續 OpenSpec 的需求討論、
 
 以 OpenSpec 為基底的使用者入口與編排層。Flow 負責理解意圖、建議路線、維持討論與 artifacts 一致；實際探索、提案與文件更新委派給 OpenSpec skills。
 
-共用規範（提問協定、分支命名、`.flow.yaml`、錯誤處理）見 `../flow-conventions/conventions.md`。所有決策點提問依其第 0 節；需求釐清本身一律維持自由對話。
+開始前先載入 `flow-conventions` skill 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+`../flow-conventions/SKILL.md`，且必須讀完整份。所有決策點提問依其第 1 節；需求釐清本身一律維持自由對話。
 
-開始前先依 conventions 第 8 節做執行前檢查；未通過就停下並建議 `/flow-init`。
+開始前先做 flow-conventions 的「執行前檢查」；未通過就停下並建議 `/flow-init`。
 
 ## 核心原則
 
@@ -132,7 +133,7 @@ type: feature # 或 bug-fix / refactor
 
 1. 顯示最終問題與目標、已確認設計決策、產出 artifacts、尚存風險或刻意不處理範圍。
 2. 確認 artifacts 位於選定 change 的 `changeRoot`。
-3. 精確加入該 change 目錄並依 conventions 第 9 節提交（commit 意圖：完成
+3. 精確加入該 change 目錄並依 flow-conventions 的「commit 規則」提交（commit 意圖：完成
    `<change-name>` 的需求討論文件）：
 
    ```bash

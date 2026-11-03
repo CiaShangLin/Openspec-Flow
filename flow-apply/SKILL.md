@@ -8,15 +8,24 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
 在 openspec-apply-change 之前加上工作區準備：依類型命名分支、
 選擇 branch 或 worktree、決定如何進入 worktree。
 
-共用規範（提問協定、分支命名、專案設定、工具對照表）見同層目錄下的
-`../flow-conventions/conventions.md`（本 skill 與 flow-conventions
-須維持同一層級，不論安裝在 Claude Code 的 `.claude/skills/` 或
-其他環境的對應 skills 目錄）。**本 skill 的所有決策點提問一律依第 0 節
+開始前先載入 `flow-conventions` skill 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+`../flow-conventions/SKILL.md`，且必須讀完整份。**本 skill 的所有決策點提問一律依 flow-conventions 的「提問協定」
 提問協定呈現與解析**：選項列全、標出預設、聲明單／多選、允許自然語言覆寫。
+
+## 分支命名規範
+
+依 change 類型決定前綴，後半段使用 openspec change 的 kebab-case 名稱：
+
+| 類型 | 分支名 | 範例 |
+|---|---|---|
+| feature（新需求） | `feature/<change-name>` | `feature/cloud-record-page` |
+| bug-fix（bug 修復） | `bug-fix/<change-name>` | `bug-fix/m3u8-parse-crash` |
+| refactor（重構） | `refactor/<change-name>` | `refactor/extract-download-state-machine` |
+
 
 ## 流程
 
-開始前先依 conventions 第 8 節做執行前檢查；未通過就停下並建議 `/flow-init`。
+開始前先做 flow-conventions 的「執行前檢查」；未通過就停下並建議 `/flow-init`。
 
 ### 1. 選定 change 並取得類型
 
@@ -24,7 +33,7 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
   多個則 `openspec list --json` 列出讓用戶挑。
 - 宣告：「Using change: <name>」。
 - 讀 `openspec/changes/<name>/.flow.yaml` 的 `type` 決定分支前綴
-  （對照 conventions.md 第 1 節）。
+  （對照下方「分支命名規範」）。
 - `.flow.yaml` 不存在或缺 `type` → 依提問協定問一次「這個 change 是
   feature / bug-fix / refactor？」並回填。`type` 只能是這三者之一，
   用戶若用自然語言輸入其他分類（如「migrate」、「chore」），須先歸類確認到
@@ -86,7 +95,7 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
    base_branch: main
    ```
 3. Commit（若上一步驟有異動 `openspec/config.yaml` 一併加入；若沒有異動，
-   只 add `.flow.yaml` 即可），訊息依 conventions 第 9 節產生（commit 意圖：
+   只 add `.flow.yaml` 即可），訊息依 flow-conventions 的「commit 規則」產生（commit 意圖：
    記錄 `<change-name>` 的工作區設定）：
    ```bash
    git add -- openspec/changes/<name>/.flow.yaml openspec/config.yaml
@@ -128,7 +137,7 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
 > 「要怎麼進入這個 worktree？」（預設：同 session 切過去）
 
 - **同 session 切過去**（預設）：用當前環境的 worktree 切換機制把工作目錄切到
-  `<worktree_base>/<change-name>`（對照 conventions.md 第 6 節；無此機制的環境
+  `<worktree_base>/<change-name>`（Claude Code 為 `EnterWorktree` 帶 `path`；無此機制的環境
   退化為 `cd <路徑>`），切換後必須以 `pwd` 確認確實在該 worktree 目錄，
   確認通過才進入步驟 3。
   - 切換失敗、或當前環境的工作目錄被鎖在原專案目錄（例如已固定 cwd 的子代理）
@@ -247,8 +256,8 @@ checkpoint 的 commit／push 狀態，以及 branch 或 worktree 位置。接著
 2. 依「可獨立理解與還原的語意變更」分組，OpenSpec task 與模組邊界僅作為
    輔助判斷。執行前先展示每批的檔案、commit message 與分組理由，供用戶掌握，
    但不要求再次確認。
-3. 逐批精確 `git add <files>` 並依 conventions 第 9 節 commit，禁止 `git add .`。
-   第 2 步展示的 commit message 也依第 9 節產生。任一批失敗就停止，
+3. 逐批精確 `git add <files>` 並依 flow-conventions 的「commit 規則」 commit，禁止 `git add .`。
+   第 2 步展示的 commit message 也依 flow-conventions 的「commit 規則」產生。任一批失敗就停止，
    保留先前已成功建立的 commits，回報完成到哪一批與原始錯誤；不得宣稱
    checkpoint 完成。
 4. commits 全部成功後，依 5.3 詢問是否 push；不因 commit 成功就自動 push。
@@ -280,7 +289,7 @@ checkpoint 的 commit／push 狀態，以及 branch 或 worktree 位置。接著
 - **NEVER 在有未提交變更的工作目錄直接建分支**——先停下詢問（commit / stash / 放棄由用戶決定），否則變更會被帶到新分支造成混淆。
 - **NEVER 自動刪除或覆蓋既有分支與 worktree 目錄**——名稱衝突一律先問。
 - **NEVER 猜測 change 類型**——`.flow.yaml` 缺 `type` 就問，猜錯前綴會污染分支歷史。
-- **NEVER 丟開放式問題取代決策點提問**——選項必須列全並標出預設，見 conventions 第 0 節。
+- **NEVER 丟開放式問題取代決策點提問**——選項必須列全並標出預設，見 flow-conventions 的「提問協定」。
 - **NEVER 靜默跳過 git 指令失敗**（分支衝突、worktree 目錄已存在等）——明確報錯並停下。
 - **NEVER 在 metadata push 失敗時仍繼續建立分支/worktree**——push 失敗一律視為錯誤中止，避免 metadata 只存在本地、跟遠端脫節。
 - **NEVER 在 worktree 建立後直接假設進入方式**——一律問「同 session 切過去／新開 session」，不自行 cd 也不只丟一句提醒了事。

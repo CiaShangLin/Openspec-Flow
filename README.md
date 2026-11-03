@@ -10,8 +10,8 @@
 ![OpenSpec Flow 總覽](assets/medium/openspec-flow-overview.png)
 
 這是個人 workflow 擴充，不是 OpenSpec 的官方建議流程。各 skills 會共用
-[`flow-conventions/conventions.md`](flow-conventions/conventions.md) 的提問協定、
-`.flow.yaml` 狀態格式、驗收工具設定與錯誤處理規則。
+[`flow-conventions`](flow-conventions/SKILL.md) skill（`user-invocable: false`）的提問協定、
+`.flow.yaml` 狀態格式、commit 規則與錯誤處理；驗收專屬規則在 `flow-verify/references/`。
 
 ## 內容
 
@@ -49,7 +49,7 @@
 
 把上述 `flow-*` 目錄整組複製進你環境對應的 skills 目錄（例如 Claude Code 的
 `.claude/skills/`），並保持 `flow-conventions/` 與各 `flow-*` 目錄同一層級——
-skill 內部以相對路徑 `../flow-conventions/conventions.md` 讀取共用規範。
+各 skill 會載入 `flow-conventions` skill 取得共用規範。
 
 必要依賴：
 

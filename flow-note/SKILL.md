@@ -13,7 +13,7 @@ effort: low
 **不做跨 skill 自動整合**：flow-discuss / flow-finish 不會主動讀取
 backlog，記錄與消化的節奏完全由用戶掌控。
 
-開始前依 `../flow-conventions/conventions.md` 第 8 節的第 1、2 項確認專案已
+開始前依 `flow-conventions` skill 第 4 節的第 1、2 項（環境沒有 Skill 工具時讀同層 `../flow-conventions/SKILL.md`）確認專案已
 初始化 OpenSpec；未初始化就停下並建議 `/flow-init`，不自行建立 `openspec/`。
 
 ## 記錄檔
@@ -33,7 +33,7 @@ backlog，記錄與消化的節奏完全由用戶掌控。
 
 1. 從用戶敘述萃取**標題**（簡短動詞句）與**描述**（一到數行，保留關鍵情境）。
 2. 判斷**類型**（feature / bug-fix / refactor）；不明確時依
-   `../flow-conventions/conventions.md` 第 0 節提問協定問一次。
+   `flow-conventions` 第 1 節提問協定問一次。
 3. **來源**自動偵測，不要問用戶：
    - `git branch --show-current` 取得當前分支，對照
      `openspec/changes/*/.flow.yaml` 的 `branch` 欄位，找到就填

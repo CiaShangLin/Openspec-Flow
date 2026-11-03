@@ -1,7 +1,7 @@
 ---
 name: flow-init
 description: 在專案導入或重新檢查 flow 系列時使用。當用戶說「初始化 flow」、「導入 flow」、「設定 openspec」、「新專案要用 flow」、「檢查 flow 依賴」或使用 /flow-init 時觸發。依序檢查 openspec CLI 與必要 skills、必要時執行 openspec init，草擬 config.yaml 的 context／rules／operations 與 flow.commit，列出現況與建議的差異後才寫入；可重複執行，不覆蓋使用者手改的設定。
-effort: medium
+effort: high
 ---
 
 # flow-init：導入與重新檢查
@@ -9,12 +9,13 @@ effort: medium
 flow 系列的初始化入口。先確認依賴，再讓 `openspec/config.yaml` 具備 flow 需要的
 專案設定。新專案從頭建立；既有專案只補缺的部分。
 
-共用規範見同層目錄下的 `../flow-conventions/conventions.md`：
+開始前先載入 `flow-conventions` skill（環境沒有 Skill 工具時，改讀同層目錄的
+`../flow-conventions/SKILL.md` 全文），會用到：
 
-- 第 0 節：提問協定（所有決策點依此呈現與解析）
-- 第 4 節：`flow:` 區塊的欄位與寫入時機（本 skill 只寫 `flow.commit`）
-- 第 8 節：必要／選用依賴與安裝方式
-- 第 9 節：commit 規則
+- 第 1 節：提問協定（所有決策點依此呈現與解析）
+- 第 3 節：`flow:` 區塊的欄位與寫入時機（本 skill 只寫 `flow.commit`）
+- 第 4 節：必要／選用依賴與安裝方式
+- 第 5 節：commit 規則
 
 ## 核心原則
 
@@ -54,13 +55,13 @@ flow 系列的初始化入口。先確認依賴，再讓 `openspec/config.yaml` 
   `--language` 只在新建 `config.yaml` 時生效，會在 `context` 開頭寫入語言要求。
   init 失敗時保留現場並停止。
 
-初始化後檢查必要 skills（conventions 第 8 節）：
+初始化後檢查必要 skills（flow-conventions 的「執行前檢查」）：
 
 - openspec-explore／propose／apply-change／update-change／archive-change 缺少 →
   多半是 profile 不是 core：提示 `openspec config profile` 選 core 後執行
   `openspec update`，停止。
 - Matt 的 `grill-me`／`improve-codebase-architecture`／`diagnosing-bugs`／`code-review`
-  缺少 → 顯示 conventions 第 8 節的安裝指令，停止。
+  缺少 → 顯示 flow-conventions 的「執行前檢查」的安裝指令，停止。
 
 以「目前環境可用的 skill 清單」判斷是否存在，不依賴固定安裝路徑。
 
@@ -164,7 +165,7 @@ operations:
 ### 7. 提交與回報
 
 有寫入檔案時，依提問協定詢問是否提交（預設：暫不提交，讓使用者先檢視 diff）。
-同意時依 conventions 第 9 節，只 stage `openspec/` 下本次新增或修改的檔案與 init
+同意時依 flow-conventions 的「commit 規則」，只 stage `openspec/` 下本次新增或修改的檔案與 init
 產生的工具設定檔。**不得 push。**
 
 最後回報：依賴檢查結果、寫入了哪些區塊、尚待使用者補充的 `context` 問題，以及

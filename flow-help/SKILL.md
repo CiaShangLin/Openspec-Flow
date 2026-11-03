@@ -39,7 +39,7 @@ flow 系列是 **編排層**，包住 openspec 系列（**文件與任務引擎*
 | `flow-verify` | 開場勾選驗收項目（單元測試／文件註解／code-review）後依序執行 | tasks 全部完成、要驗收時 |
 | `flow-finish` | 提交剩餘的驗收修正、歸檔 spec，每次選擇本地合併／建 PR／保留分支，清理分支與 worktree | 驗收通過、要收尾整合時 |
 | `flow-note` | 開發備忘錄：把途中發現的缺陷、被依賴卡住的待辦記到 `openspec/backlog.md`，可查看與更新狀態 | 實作中發現超出範圍的事想先記下來時，**任何階段都可用** |
-| `flow-conventions` | 共用規範文件（提問協定、分支命名、`.flow.yaml`、驗收工具設定等），**不是可觸發的 skill**，供其他四個引用 | 想查規範細節時直接閱讀 |
+| `flow-conventions` | 共用規範（提問協定、`.flow.yaml`、commit 規則、執行前檢查等），`user-invocable: false`，由其他 flow skill 載入；驗收專屬規則在 flow-verify 的 `references/verify-tools.md` | 想查規範細節時直接閱讀 |
 
 ## openspec 系列（引擎層，通常不直接呼叫）
 
@@ -107,8 +107,8 @@ flow:
 | 想多加一個 review 工具 | `code_review` 底下多一筆，填 `name` 與 `kind` |
 | 這次只想跑其中一個 | **不用改檔**——開場提問時直接說「3 只跑 team-code-review」 |
 | 某個工具只有我的環境有 | 加 `hosts:`，其他環境會自動跳過並重新掃描補位 |
-| 完整欄位定義 | `flow-conventions/conventions.md` 第 4 節 |
-| 掃描／快取失效／找不到工具時的行為 | 同上第 5.2 節 |
+| 完整欄位定義 | `flow-verify/references/verify-tools.md` 的「驗收相關設定」 |
+| 掃描／快取失效／找不到工具時的行為 | 同上的「委派工具」 |
 
 ## 常見疑問
 
@@ -119,7 +119,7 @@ flow:
   openspec change 目錄，後面三個階段都無從接手。flow-verify 的項目
   可在開場勾選時取消，flow-finish 會警告但不強制擋。
 - **狀態存在哪？** 每個 change 目錄的 `.flow.yaml`（type、branch、
-  驗收紀錄），跨階段、跨 session 傳遞，詳見 flow-conventions 第 3 節。
+  驗收紀錄），跨階段、跨 session 傳遞，詳見 flow-conventions 的「`.flow.yaml` 結構」。
 
 ## NEVER
 

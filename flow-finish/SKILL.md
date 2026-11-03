@@ -9,11 +9,12 @@ effort: medium
 手動觸發的最後收尾。提交尚未提交的驗收修正、歸檔並同步 spec、推送分支，最後每次
 都由使用者選擇整合方式（本地合併／建立 PR／保留分支）。
 
-共用規範見同層目錄下的 `../flow-conventions/conventions.md`。所有決策點依其第 0 節
-提問協定呈現與解析；取消、保留與不清理一律是預設。commit 訊息依第 9 節產生，與遠端
-主機互動依第 10 節。
+開始前先載入 `flow-conventions` skill 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+`../flow-conventions/SKILL.md`，且必須讀完整份。所有決策點依其第 1 節提問協定呈現與解析；
+取消、保留與不清理一律是預設。commit 訊息依其第 5 節產生，與遠端主機互動依本 skill 的
+「遠端主機判斷」一節。
 
-開始前先依 conventions 第 8 節做執行前檢查；未通過就停下並建議 `/flow-init`。
+開始前先做 flow-conventions 的「執行前檢查」；未通過就停下並建議 `/flow-init`。
 
 ## 流程
 
@@ -47,7 +48,7 @@ finish:
 ### 2. 驗收完整性檢查（僅 active change）
 
 讀 `FLOW_PATH`，比較前一律 normalize 代號（`junit`→`unit-test`、
-`kdoc`→`doc-comment`；見 conventions 第 3.1 節）。
+`kdoc`→`doc-comment`；見 flow-conventions 的「舊代號相容」）。
 
 - 有 `verify_selected` → 檢查每一項是否都在 normalized `verified`。
 - 沒有 `verify_selected` 的舊 change → fallback 檢查 `unit-test`、`doc-comment`、
@@ -82,7 +83,7 @@ finish:
    > 1. 提交後繼續  ←預設
    > 2. 停止，我自己處理
 
-4. 選 1 → 精確 stage 這些檔案，依 conventions 第 9 節 commit（意圖：提交 `<name>`
+4. 選 1 → 精確 stage 這些檔案，依 flow-conventions 的「commit 規則」 commit（意圖：提交 `<name>`
    的驗收修正）。本步不 push，push 在第 5 步。commit 失敗就停止。
 
 不得 stash 或丟棄任何檔案。
@@ -121,7 +122,7 @@ openspec archive <name> --yes --json
 - `git merge-base --is-ancestor <branch> <base_branch>` 為真 → source branch 已在本地 base
   branch。直接 `git push origin <base_branch>`；成功後進入第 8 步，失敗則保留現場並停止。
   不得再次合併。
-- 依 conventions 第 10 節判斷遠端主機：
+- 依 「遠端主機判斷」一節判斷遠端主機：
   - **可使用主機 CLI**（GitHub＋`gh`、GitLab＋`glab`）→ 查詢以 `<branch>` 為來源的開啟中
     PR／MR（例如 `gh pr list --head <branch> --state open --json number,state,baseRefName,url`）。
     恰有一個就保存 `PR_NUMBER` 與 `PR_URL` 後進入第 7 步；多個時列出讓使用者選。沒有開啟
@@ -138,7 +139,7 @@ openspec archive <name> --yes --json
 1. 用 `finish.archive_path`、`finish.synced_specs` 與原 active path（若仍在 index）組成唯一可
    stage 的路徑集合。`git status --porcelain` 若出現集合外的檔案就停止。使用精確路徑的
    `git add -A -- <paths>`；不得用 `git add .` 或納入其他變更。
-2. 若有 staged 變更，依 conventions 第 9 節 commit（意圖：歸檔 `<name>` 並同步 spec）。
+2. 若有 staged 變更，依 flow-conventions 的「commit 規則」 commit（意圖：歸檔 `<name>` 並同步 spec）。
    若沒有 archive／spec 變更可提交，清楚回報，但仍繼續檢查 push。
 3. 取得目前分支與 upstream。已有 upstream → `git push`；沒有 upstream 但有 `origin` →
    `git push -u origin <branch>`。缺少 `origin` 或目前 detached HEAD 時停止並回報，不猜測
@@ -171,8 +172,8 @@ worktree 位置後進入第 9 步。
 6. 合併後驗證：
    - 第 3 步為真 → 合併結果的程式碼與分支相同，沿用 flow-verify 的結果，回報
      「base 無新提交，沿用驗收結果」，不重跑測試。
-   - 第 3 步為假 → 依 `flow.verify_commands.test`（conventions 第 4.3 節）執行測試。
-     未快取時依第 5.3 節內省取得指令，依提問協定詢問「執行 `<指令>`／跳過合併後
+   - 第 3 步為假 → 依 `flow.verify_commands.test`（flow-verify 的 `references/verify-tools.md` 的「`verify_commands`」）執行測試。
+     未快取時依同檔的「內省查詢」內省取得指令，依提問協定詢問「執行 `<指令>`／跳過合併後
      測試」；選執行後寫回快取。
    - 測試失敗 → 停止並回報；合併只在本地、尚未推送，保留分支與 worktree，不清理。
 7. `git push origin <base_branch>`。失敗時保留本地合併、分支與 worktree，停止並回報；
@@ -180,7 +181,7 @@ worktree 位置後進入第 9 步。
 
 #### 6.2 建立 PR
 
-分支已在第 5 步推送。依 conventions 第 10 節：
+分支已在第 5 步推送。依 「遠端主機判斷」一節：
 
 - **可使用主機 CLI** → 以 CLI 建立 PR／MR，目標為 `<base_branch>`。標題與內文一律用
   繁體中文（zh-TW），沿用 repo PR 樣板的結構。保存 `PR_NUMBER` 與 `PR_URL`。
@@ -210,7 +211,7 @@ worktree 位置後進入第 9 步。
 
 - 選尚未合併 → 保留 branch/worktree，進入第 9 步。
 - 選已合併 → 先驗證：可使用主機 CLI 時確認 PR 狀態為已合併（例如
-  `gh pr view <PR_NUMBER> --json state` 為 `MERGED`）；其他主機以 conventions 第 10 節的
+  `gh pr view <PR_NUMBER> --json state` 為 `MERGED`）；其他主機以 「遠端主機判斷」一節的
   `git fetch` ＋ `merge-base --is-ancestor` 驗證。驗證不通過時警告，再讓使用者確認是否
   繼續；預設停止。
 - 驗證後更新 base branch：branch workspace 在目前目錄 `git checkout <base_branch>` 後
@@ -243,6 +244,20 @@ flow-apply 建立的 worktree 一律由本步清理。若 Git 拒絕移除（有
 回報 archive 路徑、commit/push 結果、整合方式、合併後是否重跑測試（或沿用驗收結果）、
 PR URL（如有），以及 branch/worktree 是否已清理或保留。
 
+## 遠端主機判斷
+
+flow 不假設遠端是 GitHub。需要和遠端主機互動時，先以
+`git remote get-url origin` 判斷主機：
+
+| 主機 | 條件 | PR 相關操作 |
+|---|---|---|
+| GitHub | URL 含 `github.com` 且 `gh` 可用 | 可用 `gh pr list/create/view/edit` |
+| GitLab | URL 含 `gitlab` 且 `glab` 可用 | 可用 `glab mr list/create/view` |
+| 其他（Bitbucket、自架等），或上述 CLI 不可用 | — | **不呼叫任何主機 CLI**。建立 PR ＝ push 分支後顯示 `git push` 輸出中的建立 PR 網址；沒有網址時請使用者到遠端網頁建立 |
+
+判斷分支是否已合併時，不依賴主機 CLI：先 `git fetch <remote> <base_branch>`，
+再以 `git merge-base --is-ancestor <branch> <remote>/<base_branch>` 判斷。
+
 ## NEVER
 
 - **NEVER** 以 `verified_at` hash 差異阻擋、警告或要求重跑驗收。
@@ -250,7 +265,7 @@ PR URL（如有），以及 branch/worktree 是否已清理或保留。
 - **NEVER** 在 tasks/artifacts 未完成時靜默 archive；預設必須停止。
 - **NEVER** 在 archive、commit、push、合併後測試或 base branch push 失敗後繼續整合或清理。
 - **NEVER** 使用 `git add .`、force-push 或為了清理而自行 `git worktree remove --force`。
-- **NEVER** 寫死 commit 訊息；一律依 conventions 第 9 節。
+- **NEVER** 寫死 commit 訊息；一律依 flow-conventions 的「commit 規則」。
 - **NEVER** 在 GitHub／GitLab 以外的主機，或主機 CLI 不可用時呼叫 `gh`／`glab`。
 - **NEVER** 把整合方式寫入設定或替使用者預選；每次都詢問，預設保留分支。
 - **NEVER** 自動 abort 合併或自行解決合併衝突。
