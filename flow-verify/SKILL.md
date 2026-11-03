@@ -8,7 +8,7 @@ description: 驗收已完成實作的 openspec change。當用戶說「驗收」
 flow-apply 完成後的自動化驗收編排。人工驗收仍由用戶進行，
 本 skill 負責跑完自動化項目並給出摘要。
 
-開始前先載入 `flow-conventions` skill 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`） 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
 `../flow-conventions/SKILL.md`，且必須讀完整份。
 另外必須讀完整份本 skill 的 `references/verify-tools.md`（以下簡稱 verify-tools）：
 
@@ -26,7 +26,7 @@ flow-apply 完成後的自動化驗收編排。人工驗收仍由用戶進行，
 ### 1. 選定 change 與開場詢問
 
 - change 選擇邏輯同 flow-apply（指定 > 推斷 > 列出讓用戶挑）。
-- 先做平台偵測（verify-tools 的「平台偵測」）與工具解析（第 3.2 節），
+- 先做平台偵測（verify-tools 的「平台偵測」）與工具解析（verify-tools 的「委派工具」），
   **在提問前就知道每個項目會用哪些工具**，才能在選項後透明標注。
 - 依提問協定（多選）一次問完 3 個項目，選項後標注將使用的工具：
 

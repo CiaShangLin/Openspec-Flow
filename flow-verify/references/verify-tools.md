@@ -238,4 +238,4 @@ flow-verify 委派工具時：
 | 步驟 | 有對應機制的環境（如 Claude Code） | 無對應機制時的退化行為 |
 |---|---|---|
 | 多工具執行 | 平行子代理 | 循序執行（見「多工具執行策略」） |
-| 驗收項目派工 | 每項依序派 subagent，Agent 工具帶 `effort`（見 flow-verify 第 2.0 節） | 主 session 依同樣順序直接執行 |
+| 驗收項目派工 | 每項依序派 subagent，Agent 工具帶 `effort`（見 flow-verify 的「派工方式」） | 主 session 依同樣順序直接執行 |

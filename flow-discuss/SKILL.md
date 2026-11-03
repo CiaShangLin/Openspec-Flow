@@ -7,8 +7,8 @@ description: Use when 使用者要求開始或繼續 OpenSpec 的需求討論、
 
 以 OpenSpec 為基底的使用者入口與編排層。Flow 負責理解意圖、建議路線、維持討論與 artifacts 一致；實際探索、提案與文件更新委派給 OpenSpec skills。
 
-開始前先載入 `flow-conventions` skill 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
-`../flow-conventions/SKILL.md`，且必須讀完整份。所有決策點提問依其第 1 節；需求釐清本身一律維持自由對話。
+開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`） 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+`../flow-conventions/SKILL.md`，且必須讀完整份。所有決策點提問依其「提問協定」；需求釐清本身一律維持自由對話。
 
 開始前先做 flow-conventions 的「執行前檢查」；未通過就停下並建議 `/flow-init`。
 

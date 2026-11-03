@@ -9,9 +9,9 @@ effort: medium
 手動觸發的最後收尾。提交尚未提交的驗收修正、歸檔並同步 spec、推送分支，最後每次
 都由使用者選擇整合方式（本地合併／建立 PR／保留分支）。
 
-開始前先載入 `flow-conventions` skill 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
-`../flow-conventions/SKILL.md`，且必須讀完整份。所有決策點依其第 1 節提問協定呈現與解析；
-取消、保留與不清理一律是預設。commit 訊息依其第 5 節產生，與遠端主機互動依本 skill 的
+開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`） 取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
+`../flow-conventions/SKILL.md`，且必須讀完整份。所有決策點依其「提問協定」呈現與解析；
+取消、保留與不清理一律是預設。commit 訊息依其「commit 規則」產生，與遠端主機互動依本 skill 的
 「遠端主機判斷」一節。
 
 開始前先做 flow-conventions 的「執行前檢查」；未通過就停下並建議 `/flow-init`。
@@ -73,7 +73,7 @@ finish:
 
 其餘有 staged、unstaged 或 untracked 檔案時（常見為 flow-verify 修正後尚未提交）：
 
-1. 依 flow-apply 第 5.2 節的方式，把檔案分為「明確屬於本 change」與「歸屬不明」；
+1. 依 flow-apply「建立實作 checkpoint」的方式，把檔案分為「明確屬於本 change」與「歸屬不明」；
    歸屬不明的檔案逐一依提問協定詢問「納入／排除並保持原狀（預設）」。
 2. 有任何檔案被排除 → 列出並停止。帶著未提交檔案切換分支或合併會把它們帶進 base
    branch；使用者處理後重新執行 flow-finish。
