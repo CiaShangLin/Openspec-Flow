@@ -19,10 +19,11 @@
 
 | 目錄 | 用途 |
 | --- | --- |
+| `flow-init/` | 導入與重新檢查：確認依賴、必要時執行 `openspec init`，補齊 `config.yaml` 的 context／rules／operations 與 commit 格式；可重複執行，只補差異。 |
 | `flow-discuss/` | 以自由對話理解需求，建議 explore、架構評估、proposal 或既有 change 更新路線；確認後才建立或修改 OpenSpec artifacts。 |
 | `flow-apply/` | 依 change 類型建立分支或 worktree，委派 `openspec-apply-change` 實作 tasks；遇到規格偏差或未知異常時先探索／診斷，完成後可建立語意化 checkpoint。 |
 | `flow-verify/` | 依使用者選定項目執行單元測試、文件註解與 code review，每項派獨立 subagent 並帶入對應 effort，並記錄本輪驗收結果。 |
-| `flow-finish/` | 檢查驗收與工作區、同步 delta specs、archive change、提交並推送收尾變更，最後決定本地合併、建立 PR 或保留分支；中斷後可續跑。 |
+| `flow-finish/` | 檢查驗收、提交剩餘的驗收修正、同步 delta specs、archive change 並推送，最後每次由使用者決定本地合併、建立 PR 或保留分支；不限 GitHub，中斷後可續跑。 |
 | `flow-note/` | 開發途中的備忘錄，記到 `openspec/backlog.md`，不自動整合進其他 skill。 |
 | `flow-help/` | 導覽入口，說明各 skill 用途、觸發時機與驗收工具設定速查。 |
 | `flow-conventions/` | 所有 flow skill 共用的規範來源：提問協定、分支命名、`.flow.yaml` 結構、`config.yaml` 的 `flow:` 區塊、平台偵測與工具委派、錯誤處理原則。 |
@@ -34,6 +35,7 @@
 
 | 情境 | 指令 |
 | --- | --- |
+| 專案第一次使用 flow，或 flow 提示缺少設定 | `/flow-init` |
 | 有想法、需求、bug 或重構要規劃 | `/flow-discuss` |
 | 已有 change，要開始或繼續實作 | `/flow-apply <change-name>` |
 | tasks 完成，要跑驗收 | `/flow-verify <change-name>` |
@@ -49,13 +51,16 @@
 `.claude/skills/`），並保持 `flow-conventions/` 與各 `flow-*` 目錄同一層級——
 skill 內部以相對路徑 `../flow-conventions/conventions.md` 讀取共用規範。
 
-底層仍需先安裝好 OpenSpec：
+必要依賴：
 
-```bash
-npm install -g @fission-ai/openspec@latest
-cd your-project
-openspec init
-```
+| 依賴 | 安裝 |
+| --- | --- |
+| [OpenSpec](https://github.com/Fission-AI/OpenSpec) CLI | `npm install -g @fission-ai/openspec@latest` |
+| [Matt Pocock skills](https://github.com/mattpocock/skills)（`grill-me`、`improve-codebase-architecture`、`diagnosing-bugs`、`code-review`） | Claude Code：`claude plugin install mattpocock-skills@claude-plugins-official`；其他環境：`npx skills@latest add mattpocock/skills` |
+
+接著在專案目錄執行 `/flow-init`。它會檢查依賴、在需要時執行
+`openspec init --language zh-TW`（同時安裝 openspec-* skills），並補齊 flow 需要的
+專案設定。之後可隨時重跑，只會列出差異。
 
 ## 設計原則
 

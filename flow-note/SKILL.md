@@ -13,6 +13,9 @@ effort: low
 **不做跨 skill 自動整合**：flow-discuss / flow-finish 不會主動讀取
 backlog，記錄與消化的節奏完全由用戶掌控。
 
+開始前依 `../flow-conventions/conventions.md` 第 8 節的第 1、2 項確認專案已
+初始化 OpenSpec；未初始化就停下並建議 `/flow-init`，不自行建立 `openspec/`。
+
 ## 記錄檔
 
 - 位置固定為目標專案的 `openspec/backlog.md`。

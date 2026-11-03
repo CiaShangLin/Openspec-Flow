@@ -26,15 +26,18 @@ flow 系列是 **編排層**，包住 openspec 系列（**文件與任務引擎*
 
 日常只需要記四個 `/flow-*` 指令，openspec skills 由 flow 自動委派。
 另有隨時可用的 `/flow-note`（開發備忘錄），不屬於生命週期的任一階段。
+專案第一次使用 flow 前先執行 `/flow-init`；之後各 flow 檢查到缺少設定或依賴時，
+也會提示重新執行它。
 
 ## flow 系列（主要入口）
 
 | Skill | 做什麼 | 什麼時候用 |
 |---|---|---|
+| `flow-init` | 導入與重新檢查：確認 openspec 與 Matt skills 已安裝、必要時執行 `openspec init`，補齊 `config.yaml` 的 context／rules／operations 與 commit 格式；可重複執行，只補差異 | 新專案第一次用 flow，或 flow 提示缺少設定／依賴時 |
 | `flow-discuss` | 需求討論：分流模糊想法（explore）與明確需求（propose），產出 openspec 文件；收尾確認後 commit + push 討論產物 | 有想法、需求、bug、重構要討論時，**一切的起點** |
 | `flow-apply` | 依 change 類型建分支（feature/、bug-fix/、refactor/）或 worktree（選 worktree 會再問要同 session 切過去或新開 session），委派實作 tasks | 討論完、要開始寫 code 時 |
 | `flow-verify` | 開場勾選驗收項目（單元測試／文件註解／code-review）後依序執行 | tasks 全部完成、要驗收時 |
-| `flow-finish` | 歸檔 spec，選擇合併／建 PR／保留／丟棄，清理分支與 worktree | 驗收通過、要收尾整合時 |
+| `flow-finish` | 提交剩餘的驗收修正、歸檔 spec，每次選擇本地合併／建 PR／保留分支，清理分支與 worktree | 驗收通過、要收尾整合時 |
 | `flow-note` | 開發備忘錄：把途中發現的缺陷、被依賴卡住的待辦記到 `openspec/backlog.md`，可查看與更新狀態 | 實作中發現超出範圍的事想先記下來時，**任何階段都可用** |
 | `flow-conventions` | 共用規範文件（提問協定、分支命名、`.flow.yaml`、驗收工具設定等），**不是可觸發的 skill**，供其他四個引用 | 想查規範細節時直接閱讀 |
 
@@ -56,6 +59,7 @@ flow 系列是 **編排層**，包住 openspec 系列（**文件與任務引擎*
 
 | 你的狀況 | 用這個 |
 |---|---|
+| 「新專案要開始用 flow」／flow 提示要先初始化 | `/flow-init` |
 | 「我有個模糊的想法，還不確定要做什麼」 | `/flow-discuss` → 選「模糊想法／還在探索」 |
 | 「需求很明確，幫我規劃怎麼做」 | `/flow-discuss` → 選「明確需求開發」 |
 | 「有個 bug 要修」／「這段想重構」 | `/flow-discuss` → 選 bug 修復／重構 |

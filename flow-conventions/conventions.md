@@ -1,7 +1,7 @@
 # Flow Skills 共用規範
 
-flow-discuss / flow-apply / flow-verify / flow-finish 四個 skill 的單一規範來源。
-規範調整時只改此檔，四個 skill 同步生效。
+flow-init / flow-discuss / flow-apply / flow-verify / flow-finish（及 flow-note）的單一規範來源。
+規範調整時只改此檔，所有 flow skill 同步生效。
 
 ## 0. 提問協定（所有 flow skill 適用）
 
@@ -72,7 +72,8 @@ flow 系列會在多種 AI 環境執行（Claude Code、Codex 等），各環境
 | flow-discuss：建議路線是否採用、type 三選一、artifact review loop（定稿／釐清／壓力測試／重新評估）、文件 commit 後是否 push | 「這個功能要解決什麼問題？」等需求釐清、explore／架構評估／grill-me 內部的追問 |
 | flow-apply：branch／worktree、worktree 建立後如何進入（同 session 切過去／新開 session）、分支已存在怎麼辦、是否同步文件、tasks 完成後要調整／建立 checkpoint／結束、commit 後是否 push、無 upstream 時是否設定並 push | 人工 review 後要調整的具體內容 |
 | flow-verify：開場項目、找不到工具時的二選一 | 需求細節的來回釐清 |
-| flow-finish：驗收缺項是否繼續、未完成 tasks/artifacts 是否歸檔、合併／PR／保留、是否已合併、是否清理 | |
+| flow-finish：驗收缺項是否繼續、未提交變更是否提交後繼續、未完成 tasks/artifacts 是否歸檔、合併／PR／保留、是否已合併、是否清理 | |
+| flow-init：是否執行 `openspec init`、要設定的 AI 工具、設定差異套用方式、commit 格式確認、選用 setup 是否執行、是否提交 | `context` 內容的來回補充 |
 
 **NEVER 把自由討論硬套成編號選單**——那會毀掉 flow-discuss 的探索深度。
 
@@ -177,7 +178,17 @@ flow-verify 完成時保存 `head` 與相對該 commit 的 `diff_hash`，讓人�
 
 ## 4. 專案設定（`openspec/config.yaml` 的 `flow:` 區塊）
 
-跟著專案走、不隨 skill 更新，由 flow-apply 首次使用時詢問後寫入。
+跟著專案走、不隨 skill 更新。所有 flow 設定只放這一個檔案，不得複製到各 change
+的 `.flow.yaml` 或 artifacts。寫入時機分兩種：
+
+| 欄位 | 誰寫入、何時 |
+|---|---|
+| `commit`（第 4.5 節） | flow-init。discuss 是第一個需要 commit 的步驟，早於其他會詢問的流程 |
+| `worktree_base` | flow-apply 首次選 worktree 時詢問後寫入 |
+| `verify_tools`／`verify_commands`／`verify_notes` | flow-verify／flow-finish 首次用到時詢問後寫入；flow-init 不預先設定 |
+
+整合方式（本地合併／PR／保留）**不寫入設定**，每次由 flow-finish 詢問。
+
 `worktree_base` 沒有固定值，預設建議值須由 flow-apply 依當前專案目錄名稱
 （`<repo名>-worktrees`）現場推斷，不可寫死任何專案名稱：
 
@@ -248,9 +259,9 @@ canonical key（`doc_comment`）存在時一律優先；只有它不存在時才
 （「不主動遷移 ＋ 寫回 canonical」必然會產生兩個 key 並存的狀態，沒有優先序
 就會出現一邊讀舊值、一邊讀新值。）
 
-### 4.3 `verify_commands`：lint 指令快取
+### 4.3 `verify_commands`：lint／test 指令快取
 
-lint/format 走內省路線，不走工具委派，見第 5.3 節：
+lint/format 與 flow-finish 合併後的測試都走內省路線，不走工具委派，見第 5.3 節：
 
 ```yaml
 flow:
@@ -258,7 +269,12 @@ flow:
     lint:
       android: <實際指令>
       ios: <實際指令>
+    test:                 # flow-finish 本地合併後驗證用；首次需要時詢問後寫入
+      android: <實際指令>
 ```
+
+快取的指令必須是單一、可重跑的指令，**不得串接 `rm -rf` 等清除動作**——
+這類組合會觸發權限確認，且清除失敗時難以判斷測試結果。
 
 ### 4.4 `verify_notes`：找不到工具時的應急說明
 
@@ -268,6 +284,22 @@ flow:
     unit_test:
       ios: <使用者輸入的說明文字>
 ```
+
+### 4.5 `commit`：commit 訊息格式
+
+由 flow-init 偵測後寫入，所有 flow 的 commit 依第 9 節使用：
+
+```yaml
+flow:
+  commit:
+    skill: <commit skill 名稱>   # 有值：委派該 skill 產生並執行 commit；沒有則省略
+    format: |                   # 沒有 skill 時使用：格式規則與至少一個範例
+      第一行：<type>(<scope>): <摘要>
+      範例：docs(openspec): complete discussion for add-login
+```
+
+`skill` 與 `format` 至少要有一個；兩者都有時以 `skill` 為主，`format` 作為該
+skill 不可用時的備援。
 
 ## 5. 平台偵測與工具委派
 
@@ -307,9 +339,10 @@ Android／Kotlin。判斷依據是 change 實際修改的檔案副檔名，而�
    掃描，**iOS 側的驗收就靜默消失了**。
 
 3. 有缺口 → 動態掃描目前環境可用的 skill/command，依第 0 節提問協定列出讓用戶選。
-   - 找不到任何對應工具 → 依提問協定問用戶：「現在用 `write-a-skill` 建一個正式
-     skill」或「先在 config.yaml 寫一段內嵌文字說明應急」。
-     - 選建 skill → 呼叫 `Skill(write-a-skill)`，建立完成後把工具寫入
+   - 找不到任何對應工具 → 依提問協定問用戶：「現在建一個正式 skill」或
+     「先在 config.yaml 寫一段內嵌文字說明應急」。只有環境中有可建立 skill 的
+     工具時才列出前者，並標注將使用的工具名稱（現場掃描，不寫死名稱）。
+     - 選建 skill → 呼叫該建立 skill 的工具，建立完成後把工具寫入
        `flow.verify_tools.<step>` 快取。
      - 選內嵌文字 → 把用戶輸入的說明寫入 `flow.verify_notes.<step>.<platform>`
        （自由文字欄位），flow-verify 依這段文字說明執行；不寫入 `verify_tools`
@@ -398,18 +431,74 @@ flow-verify 委派工具時：
 | 多工具執行 | 平行子代理 | 循序執行（見第 5.5 節） |
 | 驗收項目派工 | 每項依序派 subagent，Agent 工具帶 `effort`（見 flow-verify 第 2.0 節） | 主 session 依同樣順序直接執行 |
 | 進入 worktree | 環境的工作目錄切換機制（Claude Code：`EnterWorktree` 帶 `path`） | `cd <worktree 路徑>`，再以 `pwd` 驗證；切不過去就改請用戶新開 session |
-| 委派 explore | Skill(openspec-explore) | 讀程式碼／既有 artifacts，以自由對話探索；不寫 code 或 artifacts |
-| 委派 propose | Skill(openspec-propose) | `openspec new change` ＋ 手寫 artifacts |
-| 委派 update | Skill(openspec-update-change) | 只更新既有 planning artifacts；逐 artifact 提案並取得確認 |
-| 架構評估 | Skill(improve-codebase-architecture) | 分析模組責任、依賴與遷移選項；回報 2–3 個方向，不寫 code 或獨立文件 |
-| grill-me | Skill(grill-me) | 以決策樹逐分支追問代替 |
-| 委派 apply | Skill(openspec-apply-change) | 照 tasks.md 逐項實作 |
-| 委派 archive | Skill(openspec-archive-change) | 依 openspec CLI archive 指令照做 |
-| 委派收尾整合 | Skill(superpowers:finishing-a-development-branch) | 手動決定 merge/PR/保留；丟棄僅在使用者明確要求時依其確認流程處理 |
+
+openspec-* 與 Matt 的 skill 是**必要依賴**（見第 8 節），由 flow-init 確認已安裝，
+因此不提供退化行為；執行中發現缺少時依第 7 節停下。
 
 ## 7. 錯誤處理原則
 
 - openspec CLI 不存在或指令失敗 → 明確報錯並停下，不靜默跳過。
-- 委派的 skill 不存在（如環境未裝 superpowers）→ 告知用戶後改用退化行為。
+- 必要依賴的 skill 不存在 → 停下，說明缺少哪個 skill 與安裝方式，建議執行
+  `/flow-init` 重新檢查；不得自行以退化行為代替。
 - flow-apply 的 metadata push 失敗（權限不足、分支保護規則等）→ 視為錯誤並中止，
   不建立分支/worktree、不靜默略過、不自動改用其他方式繞過。
+
+## 8. 執行前檢查（preflight）
+
+flow-discuss／flow-apply／flow-verify／flow-finish／flow-note 開始時先做以下檢查。
+**只檢查、不修復**：任一項不通過就停下，說明原因並建議執行 `/flow-init`，
+不得自行執行 `openspec init`、手動建立 `openspec/` 或寫入設定。
+
+1. `openspec --version` 可執行。
+2. `openspec list --json` 的 `root` 不為 `null`。
+   - `root` 為 `null` 且錯誤訊息以 `Declared in` 或 `Invalid store declaration in`
+     開頭 → 專案透過 store 使用 OpenSpec 但此機器無法解析：顯示該錯誤的
+     `message` 與 `fix` 後停下，**不要**建議 `/flow-init`。
+3. `openspec/config.yaml` 有 `flow.commit`（第 4.5 節）。flow-verify 不會 commit，
+   可略過本項。
+4. 依賴的 skill 只在**即將使用時**才檢查（例如 discuss 走架構評估前才確認
+   `improve-codebase-architecture` 存在），不在開場一次掃完。
+
+必要依賴：
+
+| 依賴 | 用途 | 安裝 |
+|---|---|---|
+| `openspec` CLI | 全部 | `npm install -g @fission-ai/openspec@latest` |
+| `openspec-explore`／`openspec-propose`／`openspec-apply-change`／`openspec-update-change`／`openspec-archive-change` | discuss、apply、finish | `openspec init`（core profile）會安裝；缺少時 `openspec update` |
+| `grill-me`／`improve-codebase-architecture`／`diagnosing-bugs`／`code-review` | discuss、apply、verify | Matt Pocock skills。Claude Code：`claude plugin install mattpocock-skills@claude-plugins-official`；其他環境：`npx skills@latest add mattpocock/skills` |
+
+選用依賴（缺少不阻擋）：Matt 的 `setup-matt-pocock-skills`（提供 `/code-review`
+讀取的 issue tracker 設定）、任何可建立 skill 的工具（見第 5.2 節）。
+
+flow 不依賴 superpowers。
+
+## 9. commit 規則
+
+所有 flow 產生的 commit（discuss 的文件提交、apply 的 metadata 與 checkpoint、
+finish 的收尾提交、flow-init 的初始化提交）一律依本節決定訊息，**不得寫死任何
+commit 訊息字串**。
+
+1. **先精確 stage**：只 `git add -- <明確路徑>`，禁止 `git add .`。
+2. **依 `flow.commit` 產生訊息**：
+   - 有 `skill` 且環境可用 → 委派該 skill，並告知：已 stage 的路徑、本次 commit 的
+     意圖摘要（例如「記錄 <change> 的工作區 metadata」）、不得再 stage 其他檔案、
+     不得 push。
+   - 否則依 `format` 自行組出訊息。
+   - 兩者都沒有 → 停下並建議 `/flow-init`，不得自行猜格式。
+3. **hook 拒絕時**：顯示 hook 的原始輸出，依其指出的問題修正訊息**重試一次**；
+   仍失敗就停下回報。不得使用 `--no-verify` 或其他繞過 hook 的方式。
+4. **commit 不等於 push**：是否 push 由各 skill 的決策點決定。
+
+## 10. 遠端主機與 PR
+
+flow 不假設遠端是 GitHub。需要和遠端主機互動時，先以
+`git remote get-url origin` 判斷主機：
+
+| 主機 | 條件 | PR 相關操作 |
+|---|---|---|
+| GitHub | URL 含 `github.com` 且 `gh` 可用 | 可用 `gh pr list/create/view/edit` |
+| GitLab | URL 含 `gitlab` 且 `glab` 可用 | 可用 `glab mr list/create/view` |
+| 其他（Bitbucket、自架等），或上述 CLI 不可用 | — | **不呼叫任何主機 CLI**。建立 PR ＝ push 分支後顯示 `git push` 輸出中的建立 PR 網址；沒有網址時請使用者到遠端網頁建立 |
+
+判斷分支是否已合併時，不依賴主機 CLI：先 `git fetch <remote> <base_branch>`，
+再以 `git merge-base --is-ancestor <branch> <remote>/<base_branch>` 判斷。

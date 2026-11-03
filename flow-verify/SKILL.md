@@ -20,6 +20,9 @@ flow-apply 完成後的自動化驗收編排。人工驗收仍由用戶進行，
 
 ## 流程
 
+開始前先依 conventions 第 8 節做執行前檢查（本 skill 不 commit，略過第 3 項）；
+未通過就停下並建議 `/flow-init`。
+
 ### 1. 選定 change 與開場詢問
 
 - change 選擇邏輯同 flow-apply（指定 > 推斷 > 列出讓用戶挑）。

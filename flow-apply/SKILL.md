@@ -16,6 +16,8 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
 
 ## 流程
 
+開始前先依 conventions 第 8 節做執行前檢查；未通過就停下並建議 `/flow-init`。
+
 ### 1. 選定 change 並取得類型
 
 - 有指定 change 名稱就用它；否則：單一 active change 自動選、
@@ -84,10 +86,10 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
    base_branch: main
    ```
 3. Commit（若上一步驟有異動 `openspec/config.yaml` 一併加入；若沒有異動，
-   只 add `.flow.yaml` 即可）：
+   只 add `.flow.yaml` 即可），訊息依 conventions 第 9 節產生（commit 意圖：
+   記錄 `<change-name>` 的工作區設定）：
    ```bash
-   git add openspec/changes/<name>/.flow.yaml openspec/config.yaml
-   git commit -m "chore: record flow workspace metadata for <change-name>"
+   git add -- openspec/changes/<name>/.flow.yaml openspec/config.yaml
    ```
 4. Push：
    ```bash
@@ -245,7 +247,8 @@ checkpoint 的 commit／push 狀態，以及 branch 或 worktree 位置。接著
 2. 依「可獨立理解與還原的語意變更」分組，OpenSpec task 與模組邊界僅作為
    輔助判斷。執行前先展示每批的檔案、commit message 與分組理由，供用戶掌握，
    但不要求再次確認。
-3. 逐批精確 `git add <files>` 並 commit，禁止 `git add .`。任一批失敗就停止，
+3. 逐批精確 `git add <files>` 並依 conventions 第 9 節 commit，禁止 `git add .`。
+   第 2 步展示的 commit message 也依第 9 節產生。任一批失敗就停止，
    保留先前已成功建立的 commits，回報完成到哪一批與原始錯誤；不得宣稱
    checkpoint 完成。
 4. commits 全部成功後，依 5.3 詢問是否 push；不因 commit 成功就自動 push。

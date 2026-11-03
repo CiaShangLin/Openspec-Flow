@@ -6,11 +6,14 @@ effort: medium
 
 # flow-finish：完成 change
 
-手動觸發的最後收尾。實作與驗收已完成、實作檔已先提交；本 skill 只提交 archive／同步 spec
-產生的變更、推送分支，然後委派 `superpowers:finishing-a-development-branch` 決定整合。
+手動觸發的最後收尾。提交尚未提交的驗收修正、歸檔並同步 spec、推送分支，最後每次
+都由使用者選擇整合方式（本地合併／建立 PR／保留分支）。
 
 共用規範見同層目錄下的 `../flow-conventions/conventions.md`。所有決策點依其第 0 節
-提問協定呈現與解析；取消、保留與不清理一律是預設。
+提問協定呈現與解析；取消、保留與不清理一律是預設。commit 訊息依第 9 節產生，與遠端
+主機互動依第 10 節。
+
+開始前先依 conventions 第 8 節做執行前檢查；未通過就停下並建議 `/flow-init`。
 
 ## 流程
 
@@ -64,12 +67,25 @@ finish:
 
 ### 3. 收尾前工作區檢查（僅 active change）
 
-實作檔必須已先 commit。檢查 `git status --porcelain`：唯一可接受的未提交檔案是
-`openspec/changes/<name>/.flow.yaml`，因為它會隨 archive 一起成為本次收尾 commit 的
-一部分。
+檢查 `git status --porcelain`。`openspec/changes/<name>/.flow.yaml` 會隨 archive 一起
+提交，不算未提交變更。
 
-若還有其他 staged、unstaged 或 untracked 檔案，列出檔案並停止；不得 stash、丟棄、
-或把它們納入收尾 commit。使用者處理並提交後，再重新執行 flow-finish。
+其餘有 staged、unstaged 或 untracked 檔案時（常見為 flow-verify 修正後尚未提交）：
+
+1. 依 flow-apply 第 5.2 節的方式，把檔案分為「明確屬於本 change」與「歸屬不明」；
+   歸屬不明的檔案逐一依提問協定詢問「納入／排除並保持原狀（預設）」。
+2. 有任何檔案被排除 → 列出並停止。帶著未提交檔案切換分支或合併會把它們帶進 base
+   branch；使用者處理後重新執行 flow-finish。
+3. 全部納入時，列出檔案後依提問協定單選：
+
+   > 還有未提交的變更，要提交後繼續收尾嗎？
+   > 1. 提交後繼續  ←預設
+   > 2. 停止，我自己處理
+
+4. 選 1 → 精確 stage 這些檔案，依 conventions 第 9 節 commit（意圖：提交 `<name>`
+   的驗收修正）。本步不 push，push 在第 5 步。commit 失敗就停止。
+
+不得 stash 或丟棄任何檔案。
 
 ### 4. 自動同步與 archive（僅 active change）
 
@@ -104,11 +120,16 @@ openspec archive <name> --yes --json
 
 - `git merge-base --is-ancestor <branch> <base_branch>` 為真 → source branch 已在本地 base
   branch。直接 `git push origin <base_branch>`；成功後進入第 8 步，失敗則保留現場並停止。
-  不得再次委派 merge。
-- 先以 `gh pr list --head <branch> --state open --json number,state,baseRefName,url` 尋找開啟中的
-  PR；找到時若恰有一個就保存其 `PR_NUMBER` 與 `PR_URL` 後直接進入第 7 步，多個時列出讓
-  使用者選一個。沒有開啟中的 PR 才再查 `--state merged`；若找到已合併 PR，保存其
-  `PR_NUMBER` 後進入第 7 步同步 base。已關閉但未合併的 PR 不得阻止建立新的 PR。
+  不得再次合併。
+- 依 conventions 第 10 節判斷遠端主機：
+  - **可使用主機 CLI**（GitHub＋`gh`、GitLab＋`glab`）→ 查詢以 `<branch>` 為來源的開啟中
+    PR／MR（例如 `gh pr list --head <branch> --state open --json number,state,baseRefName,url`）。
+    恰有一個就保存 `PR_NUMBER` 與 `PR_URL` 後進入第 7 步；多個時列出讓使用者選。沒有開啟
+    中的才查已合併的；找到已合併者，保存 `PR_NUMBER` 後進入第 7 步同步 base。已關閉但
+    未合併的不得阻止建立新的 PR。
+  - **其他主機**（Bitbucket、自架等）→ 不呼叫任何主機 CLI。改以
+    `git fetch origin <base_branch>` 後 `git merge-base --is-ancestor <branch> origin/<base_branch>`
+    判斷：為真代表已在遠端合併，進入第 7 步的「已合併」處理。
 - 其他情況 → 目前 `git branch --show-current` 必須等於 `branch`；不相同就停止並顯示應回到的
   branch／worktree，不得 push 目前錯誤的 branch。
 
@@ -117,64 +138,88 @@ openspec archive <name> --yes --json
 1. 用 `finish.archive_path`、`finish.synced_specs` 與原 active path（若仍在 index）組成唯一可
    stage 的路徑集合。`git status --porcelain` 若出現集合外的檔案就停止。使用精確路徑的
    `git add -A -- <paths>`；不得用 `git add .` 或納入其他變更。
-2. 若有 staged 變更，先尋找專案指示或設定指定的 commit skill；有可用且適用的專屬 skill
-   就委派它產生／執行 commit。沒有時執行：
-   ```bash
-   git commit -m "chore: archive OpenSpec change <name>"
-   ```
+2. 若有 staged 變更，依 conventions 第 9 節 commit（意圖：歸檔 `<name>` 並同步 spec）。
    若沒有 archive／spec 變更可提交，清楚回報，但仍繼續檢查 push。
 3. 取得目前分支與 upstream。已有 upstream → `git push`；沒有 upstream 但有 `origin` →
    `git push -u origin <branch>`。缺少 `origin` 或目前 detached HEAD 時停止並回報，不猜測
-   遠端或目標分支。
+   遠端或目標分支。**保留 push 輸出**：其他主機建立 PR 時需要其中的網址（第 6.2 節）。
 4. commit 或 push 失敗時停止，不回退 archive 或已建立的 commit，不 force-push。下次呼叫
    flow-finish 時第 1 步會選到同名 archive，從本步重試。
 
-### 6. 委派完成整合
+### 6. 選擇整合方式
 
-push 成功後呼叫 `Skill(superpowers:finishing-a-development-branch)`。它必須重跑完整測試，
-再呈現其原生的三個選項：
+push 成功後，每次都依提問協定單選詢問，不寫入設定：
 
-1. 合併回 `<base_branch>` 本地
-2. 推送並建立 PR
-3. 保留分支不處理
+> 要如何整合 `<branch>`？
+> 1. 本地合併回 `<base_branch>`
+> 2. 建立 PR
+> 3. 保留分支，之後自己處理（預設）
 
-不得把「丟棄」加回常規選單；只有使用者明確要求丟棄時，才依委派 skill 的 `discard`
-確認流程處理。**委派契約**：本地 merge 的 merge 後測試照原 skill 執行，但 branch/worktree
-cleanup 必須延後，交由本 skill 在 base branch push 成功後的第 8 步處理。
+「丟棄」不列入選單；只有使用者明確要求時才依第 6.3 節處理。選 3 → 回報分支與
+worktree 位置後進入第 9 步。
 
-選本地合併時，委派 skill 在 merge 後測試成功才可繼續。接著 flow-finish 必須：
+#### 6.1 本地合併
 
-```bash
-git push origin <base_branch>
-```
+1. `base_branch` 缺少（舊 change）→ 依分支來源推測並請使用者確認；不得猜測後直接合併。
+2. worktree workspace 時，先回到主 repo 目錄：
+   `git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel`。
+3. 合併前記錄 base 是否有本分支沒有的提交：
+   `git merge-base --is-ancestor <base_branch> <branch>`（為真 ＝ base 沒有新提交）。
+4. `git checkout <base_branch>`；有 upstream 時 `git pull --ff-only`。失敗就停止。
+5. `git merge <branch>`。發生衝突 → 停止並列出衝突檔案，保留合併中的狀態交由使用者
+   處理；不得自動 abort，也不得自行選邊解決。
+6. 合併後驗證：
+   - 第 3 步為真 → 合併結果的程式碼與分支相同，沿用 flow-verify 的結果，回報
+     「base 無新提交，沿用驗收結果」，不重跑測試。
+   - 第 3 步為假 → 依 `flow.verify_commands.test`（conventions 第 4.3 節）執行測試。
+     未快取時依第 5.3 節內省取得指令，依提問協定詢問「執行 `<指令>`／跳過合併後
+     測試」；選執行後寫回快取。
+   - 測試失敗 → 停止並回報；合併只在本地、尚未推送，保留分支與 worktree，不清理。
+7. `git push origin <base_branch>`。失敗時保留本地合併、分支與 worktree，停止並回報；
+   不得 force-push 或清理。成功後進入第 8 步。
 
-base branch push 失敗時保留本地 merge、分支與 worktree，停止並回報；不得 force-push 或
-清理。成功後進入第 8 步。
+#### 6.2 建立 PR
+
+分支已在第 5 步推送。依 conventions 第 10 節：
+
+- **可使用主機 CLI** → 以 CLI 建立 PR／MR，目標為 `<base_branch>`。標題與內文一律用
+  繁體中文（zh-TW），沿用 repo PR 樣板的結構。保存 `PR_NUMBER` 與 `PR_URL`。
+- **其他主機** → 不呼叫任何 CLI。顯示第 5 步 push 輸出中的建立 PR 網址；沒有網址
+  （例如本次沒有新提交需要推送）時，請使用者到遠端網頁建立。
+
+接著進入第 7 步。
+
+#### 6.3 丟棄（僅在使用者明確要求時）
+
+列出將被刪除的本地分支、`git log <base_branch>..<branch> --oneline` 的提交與 worktree
+路徑，並說明遠端分支不會被刪除。要求使用者輸入 `discard` 確認；收到確認後依第 8 步的
+方式移除 worktree，再以 `git branch -D <branch>` 刪除分支。
 
 ### 7. PR 後處理
 
-選建立 PR 時，PR 標題與內文一律用繁體中文（zh-TW），但沿用 repo PR 樣板的結構。建立
-回傳後保存其 `PR_NUMBER` 與 `PR_URL`；從續跑進入時，使用第 5 步保存的 `PR_NUMBER`。
-從 `FLOW_PATH` 取得 `base_branch`；有值時用
-`gh pr view <PR_NUMBER> --json number,baseRefName` 確認，不同就以
-`gh pr edit <PR_NUMBER> --base <base_branch>` 校正。
+從續跑進入時，使用第 5 步保存的 `PR_NUMBER`。
 
-PR 建立後依提問協定單選：
+- **可使用主機 CLI** 且 `FLOW_PATH` 有 `base_branch` → 確認 PR 的目標分支，不同就以 CLI
+  校正（例如 `gh pr edit <PR_NUMBER> --base <base_branch>`）。其他主機略過校正。
+
+依提問協定單選：
 
 > PR 已合併了嗎？要切回 <base_branch> 並 pull 嗎？
 > 1. 已合併，切回並 pull
 > 2. 尚未合併，留在目前分支（預設）
 
 - 選尚未合併 → 保留 branch/worktree，進入第 9 步。
-- 選已合併 → 先以 `gh pr view <PR_NUMBER> --json state` 驗證為 `MERGED`。不是 MERGED 時，
-  警告後再讓使用者確認是否繼續；預設停止。
+- 選已合併 → 先驗證：可使用主機 CLI 時確認 PR 狀態為已合併（例如
+  `gh pr view <PR_NUMBER> --json state` 為 `MERGED`）；其他主機以 conventions 第 10 節的
+  `git fetch` ＋ `merge-base --is-ancestor` 驗證。驗證不通過時警告，再讓使用者確認是否
+  繼續；預設停止。
 - 驗證後更新 base branch：branch workspace 在目前目錄 `git checkout <base_branch>` 後
   `git pull`；worktree workspace 則在主 repo 目錄 `git pull`，並提示使用者回到主 repo。
   再進入第 8 步。
 
 ### 8. 清理已整合的工作區
 
-適用於「本地合併且 base branch 已 push」或「PR 已驗證 MERGED 並已更新 base branch」。
+適用於「本地合併且 base branch 已 push」或「PR 已驗證合併並已更新 base branch」。
 依提問協定單選：
 
 > 要清理本地分支／worktree 嗎？
@@ -189,24 +234,28 @@ PR 建立後依提問協定單選：
   離開該 worktree 後，在主 repo 依序執行
   `git worktree remove <WORKTREE_PATH>`、`git worktree prune`、`git branch -d <branch>`。
 
-外部 flow-apply worktree 不會被 superpower 自動移除，必須由本步處理。若 Git 拒絕移除
-（有未提交或 untracked 檔案），列出 `git -C <WORKTREE_PATH> status --porcelain -uall`，保留
-現場並停止；不得自行 `--force`。
+flow-apply 建立的 worktree 一律由本步清理。若 Git 拒絕移除（有未提交或 untracked
+檔案），列出 `git -C <WORKTREE_PATH> status --porcelain -uall`，保留現場並停止；不得
+自行 `--force`。
 
 ### 9. 收尾回報
 
-回報 archive 路徑、commit/push 結果、整合方式、PR URL（如有），以及 branch/worktree
-是否已清理或保留。
+回報 archive 路徑、commit/push 結果、整合方式、合併後是否重跑測試（或沿用驗收結果）、
+PR URL（如有），以及 branch/worktree 是否已清理或保留。
 
 ## NEVER
 
 - **NEVER** 以 `verified_at` hash 差異阻擋、警告或要求重跑驗收。
-- **NEVER** 在收尾前把實作或歸屬不明的工作區變更納入 commit。
+- **NEVER** 未經確認就把工作區變更納入 commit，或納入歸屬不明的檔案。
 - **NEVER** 在 tasks/artifacts 未完成時靜默 archive；預設必須停止。
-- **NEVER** 在 archive、commit、push 或 base branch push 失敗後繼續整合或清理。
+- **NEVER** 在 archive、commit、push、合併後測試或 base branch push 失敗後繼續整合或清理。
 - **NEVER** 使用 `git add .`、force-push 或為了清理而自行 `git worktree remove --force`。
-- **NEVER** 在 PR／保留情境清理 worktree；唯一例外是 PR 已驗證 MERGED、base 已更新且
+- **NEVER** 寫死 commit 訊息；一律依 conventions 第 9 節。
+- **NEVER** 在 GitHub／GitLab 以外的主機，或主機 CLI 不可用時呼叫 `gh`／`glab`。
+- **NEVER** 把整合方式寫入設定或替使用者預選；每次都詢問，預設保留分支。
+- **NEVER** 自動 abort 合併或自行解決合併衝突。
+- **NEVER** 在 PR／保留情境清理 worktree；唯一例外是 PR 已驗證合併、base 已更新且
   使用者明確選擇清理。
-- **NEVER** 只憑口頭說「已合併」就切回或清理；必須先驗證 PR state 為 `MERGED`。
+- **NEVER** 只憑口頭說「已合併」就切回或清理；必須先依第 7 步驗證。
 - **NEVER** 在 `.flow.yaml` 缺 `base_branch` 時報錯；舊 change 缺欄位時略過 PR base
-  校正，並由委派 skill 依分支來源確認 base branch。
+  校正，並依第 6.1 節請使用者確認 base branch。

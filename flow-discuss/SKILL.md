@@ -9,6 +9,8 @@ description: Use when 使用者要求開始或繼續 OpenSpec 的需求討論、
 
 共用規範（提問協定、分支命名、`.flow.yaml`、錯誤處理）見 `../flow-conventions/conventions.md`。所有決策點提問依其第 0 節；需求釐清本身一律維持自由對話。
 
+開始前先依 conventions 第 8 節做執行前檢查；未通過就停下並建議 `/flow-init`。
+
 ## 核心原則
 
 - **使用者說意圖，不必選 skill。** Flow 依上下文提出路線建議與理由；使用者可確認或覆寫。
@@ -130,11 +132,11 @@ type: feature # 或 bug-fix / refactor
 
 1. 顯示最終問題與目標、已確認設計決策、產出 artifacts、尚存風險或刻意不處理範圍。
 2. 確認 artifacts 位於選定 change 的 `changeRoot`。
-3. 精確加入該 change 目錄並提交：
+3. 精確加入該 change 目錄並依 conventions 第 9 節提交（commit 意圖：完成
+   `<change-name>` 的需求討論文件）：
 
    ```bash
    git add -- "<changeRoot>"
-   git commit -m "docs(openspec): complete discussion for <change-name>"
    ```
 
 4. commit 成功後依提問協定（單選）詢問：
