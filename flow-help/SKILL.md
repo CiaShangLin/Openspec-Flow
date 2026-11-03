@@ -81,7 +81,7 @@ flow 系列是 **編排層**，包住 openspec 系列（**文件與任務引擎*
 flow:
   verify_tools:
     code_review:
-      - name: ngs-code-review
+      - name: team-code-review
         kind: skill             # skill | command，決定怎麼呼叫
         platforms: [android]    # 省略 = 適用所有偵測到的平台
         default: true           # 開場提問時是否預先勾選
@@ -101,7 +101,7 @@ flow:
 | 問題 | 做法 |
 |---|---|
 | 想多加一個 review 工具 | `code_review` 底下多一筆，填 `name` 與 `kind` |
-| 這次只想跑其中一個 | **不用改檔**——開場提問時直接說「3 只跑 ngs-code-review」 |
+| 這次只想跑其中一個 | **不用改檔**——開場提問時直接說「3 只跑 team-code-review」 |
 | 某個工具只有我的環境有 | 加 `hosts:`，其他環境會自動跳過並重新掃描補位 |
 | 完整欄位定義 | `flow-conventions/conventions.md` 第 4 節 |
 | 掃描／快取失效／找不到工具時的行為 | 同上第 5.2 節 |

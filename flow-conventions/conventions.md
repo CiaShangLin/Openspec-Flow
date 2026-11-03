@@ -45,7 +45,7 @@ flow 系列會在多種 AI 環境執行（Claude Code、Codex 等），各環境
 | `2` | 單選，選第 2 項 |
 | `1,3` | 多選（全形逗號、頓號、空白分隔皆須接受） |
 | `0` | 套用全部預設（別名：`預設`／`default`／`d`） |
-| 自然語言 | 描述要改的部分，例如「3 只跑 ngs-code-review」 |
+| 自然語言 | 描述要改的部分，例如「3 只跑 team-code-review」 |
 
 **為何用 `0` 而非字母**：注音／倉頡等中文輸入法下打英文字母需切換輸入法，
 違反「少操作」的目的；`0` 與選項編號同一輸入系統，也不佔用正常選項編號。
@@ -93,7 +93,7 @@ flow-verify 開場一次問完，3 個項目（多選，依第 0 節提問協定
 
 | 項目 | 代號 | 預設 | 說明 |
 |---|---|---|---|
-| 單元測試 | `unit-test` | 勾選 | 依 change 修改的檔案副檔名判斷平台，分別 delegate 給對應平台的工具執行，結果合併呈現，詳見第 5 節。UI 層（Adapter/ViewHolder/DiffUtil）預設不寫、需要時先詢問——此為單一 class 類型層級的既有規則，跟本項是否整個跳過是不同層級，兩者並存。 |
+| 單元測試 | `unit-test` | 勾選 | 依 change 修改的檔案副檔名判斷平台，分別 delegate 給對應平台的工具執行，結果合併呈現，詳見第 5 節。專案慣例預設不補測試的層級（例如部分專案的 UI 層，由單元測試工具或專案 `context` 定義）需要時先詢問——此為單一 class 類型層級的規則，跟本項是否整個跳過是不同層級，兩者並存。 |
 | 文件註解 | `doc-comment` | 勾選 | 為本次新增/修改的 public class 與 function 補上文件型註解（Kotlin 的 KDoc、Swift 的 DocC 等）。依平台委派，規則同第 5.2 節。 |
 | code-review | `code-review` | 勾選 | 依第 4 節設定取得可用工具供選擇，不寫死清單；執行前自動先跑 lint/format（不進勾選，詳見第 5.3 節）。放最後執行，才能連測試與文件註解一起審。 |
 
@@ -183,7 +183,7 @@ flow-verify 完成時保存 `head` 與相對該 commit 的 `diff_hash`，讓人�
 
 ```yaml
 flow:
-  worktree_base: ../<repo名>-worktrees   # 例如專案目錄為 avnight，推斷為 ../avnight-worktrees
+  worktree_base: ../<repo名>-worktrees   # 例如專案目錄為 my-app，推斷為 ../my-app-worktrees
 ```
 
 ### 4.1 `verify_tools`：工具物件清單
@@ -195,17 +195,17 @@ flow:
 flow:
   verify_tools:
     unit_test:
-      - name: ngs-android-unit-testing
+      - name: android-unit-testing
         kind: skill
         platforms: [android]
         default: true
     doc_comment:
-      - name: ngs-kdoc
+      - name: kotlin-kdoc
         kind: skill
         platforms: [android]
         default: true
     code_review:
-      - name: ngs-code-review
+      - name: team-code-review
         kind: skill
         platforms: [android]
         default: true
@@ -228,12 +228,12 @@ flow:
 | `internal_parallelism` | 否 | `true` 表示該工具內部自己會平行委派，見第 5.5 節 |
 
 **為何需要 `kind` 與 `hosts`**：`openspec/config.yaml` 跟著 repo 進版控，但
-`/code-review`（command）、`ngs-code-review`（skill）呼叫方式不同，且不是每個
+`/code-review`（command）、`team-code-review`（skill）呼叫方式不同，且不是每個
 環境都有這些工具。同事拉下 repo、或換到另一個 agent 環境時，沒有這兩個欄位
 就會直接失效。
 
 **向後相容（舊版扁平字串格式）**：優化前的設定是 `<step>.<platform>: <單一工具名稱>`
-的扁平字串（例如 `unit_test: {android: ngs-android-unit-testing}`）。讀到這種格式時，
+的扁平字串（例如 `unit_test: {android: android-unit-testing}`）。讀到這種格式時，
 視為 `[{name: <工具名稱>, kind: skill, platforms: [<platform>], default: true}]`；
 不主動改寫既有檔案，下次該設定被更新寫回快取時才轉成新格式。
 
@@ -318,7 +318,7 @@ Android／Kotlin。判斷依據是 change 實際修改的檔案副檔名，而�
 
 所有平台一視同仁，包含 Android／Kotlin：`config.yaml` 尚未設定
 `verify_tools.unit_test`／`verify_tools.doc_comment` 時，一樣走上面第 3 步的
-掃描／詢問流程（`ngs-android-unit-testing`、`ngs-kdoc` 會在掃描時被列為候選
+掃描／詢問流程（`android-unit-testing`、`kotlin-kdoc` 會在掃描時被列為候選
 工具），選定後寫回快取，不特別硬編碼任何平台的預設對應。
 
 ### 5.3 內省查詢（lint/format）

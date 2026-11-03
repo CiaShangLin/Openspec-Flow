@@ -29,11 +29,11 @@ flow-apply 完成後的自動化驗收編排。人工驗收仍由用戶進行，
 
 ```
 ❓ 這次驗收要執行哪些項目？
-  1) 單元測試    ←預設  [ngs-android-unit-testing]
-  2) 文件註解    ←預設  [ngs-kdoc]
-  3) code-review ←預設  [ngs-code-review, /code-review]
+  1) 單元測試    ←預設  [android-unit-testing]
+  2) 文件註解    ←預設  [kotlin-kdoc]
+  3) code-review ←預設  [team-code-review, /code-review]
                         （候選：codex:rescue）
-回覆：數字多選 `1,3`／`0` 套預設／或描述要改的部分（如「3 只跑 ngs-code-review」）
+回覆：數字多選 `1,3`／`0` 套預設／或描述要改的部分（如「3 只跑 team-code-review」）
 ```
 
 - 用戶要調整某項目用哪些工具時，**在同一則回覆用自然語言表達即可**，
@@ -158,9 +158,9 @@ findings：<僅 review 工具>
 ```
 ## code-review 結果
 
-### 合併清單（ngs-code-review, codex:rescue）
+### 合併清單（team-code-review, codex:rescue）
 【高】DownloadRepo.kt:88 未處理的 !!    ← 2 個來源都提到
-【低】命名：mDataList → mVideoList      ← ngs-code-review
+【低】命名：mDataList → mVideoList      ← team-code-review
 
 ### /code-review（獨立呈現，不併入上表）
 #### Standards
@@ -236,7 +236,7 @@ flow-verify 的職責，交給 `flow-finish` 處理。
   且最終 diff 要再過一次 code-review，否則會留下「看似通過、實際已被後續修改破壞」的狀態。
 - **NEVER 累加 `verified`**——每輪驗收開場就清空重建，否則舊結果會讓 flow-finish 誤判。
 - **NEVER 為了重新驗證而執行本輪未勾選的項目**——尊重用戶的勾選範圍。
-- **NEVER 未詢問就為 UI 層（Adapter/ViewHolder/DiffUtil）補單元測試**——專案慣例為預設不寫。
+- **NEVER 未詢問就為專案慣例預設不補測試的層級補單元測試**——例如部分專案的 UI 層；以單元測試工具或專案 `context` 的規定為準。
 - **NEVER 為測試程式碼補文件註解**——只針對正式程式碼，且一律以繁體中文撰寫。
 - **NEVER 忽略 `verify_selected` 直接跑滿 3 項或全部跳過**——只執行用戶勾選的項目。
 - **NEVER 讓多個 review 子代理同時修改檔案**——子代理一律唯讀、只回報 findings，修正統一由主 agent 執行。
