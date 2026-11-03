@@ -3,6 +3,8 @@
 以 [OpenSpec](https://github.com/Fission-AI/OpenSpec) 為文件與任務引擎的流程編排 skills。它將需求討論、實作、驗收與收尾串為一致的 change 生命週期，並補足分支、worktree、checkpoint、驗收紀錄及收尾整合等專案慣例。
 
 ```text
+/flow-init（每個專案一次）
+     ↓
 /flow-discuss → /flow-apply → /flow-verify → /flow-finish
    規劃與建檔      建工作區與實作    自動化驗收       歸檔與整合
 ```
@@ -26,7 +28,7 @@
 
 ## 使用方式
 
-日常只需記住四個主要入口：
+日常只需記住 discuss、apply、verify、finish 四個主要入口，其餘按需使用：
 
 | 情境 | 指令 |
 | --- | --- |
@@ -44,7 +46,8 @@
 
 把上述 `flow-*` 目錄整組複製進你環境對應的 skills 目錄（例如 Claude Code 的
 `.claude/skills/`），並保持 `flow-conventions/` 與各 `flow-*` 目錄同一層級——
-各 skill 會載入 `flow-conventions` skill 取得共用規範。
+各 skill 會載入 `flow-conventions` skill 取得共用規範。也可以包進自己的 plugin，
+此時 skill 名稱會帶 plugin 前綴（例如 `<plugin>:flow-conventions`），不影響使用。
 
 必要依賴：
 
@@ -52,6 +55,15 @@
 | --- | --- |
 | [OpenSpec](https://github.com/Fission-AI/OpenSpec) CLI | `npm install -g @fission-ai/openspec@latest` |
 | [Matt Pocock skills](https://github.com/mattpocock/skills)（`grill-me`、`improve-codebase-architecture`、`diagnosing-bugs`、`code-review`） | Claude Code：`claude plugin install mattpocock-skills@claude-plugins-official`；其他環境：`npx skills@latest add mattpocock/skills` |
+
+選用依賴（缺少不阻擋）：
+
+| 依賴 | 用途 |
+| --- | --- |
+| Matt 的 `setup-matt-pocock-skills` | 產生 `/code-review` 會讀取的 issue tracker 設定；`/flow-init` 偵測到專案沒有 `docs/agents/` 時會提議一次 |
+| 任何可建立 skill 的工具 | 驗收缺少對應平台的工具時，可當場建立；沒有時改為文字提示 |
+
+flow 不依賴 superpowers。
 
 接著在專案目錄執行 `/flow-init`。它會檢查依賴、在需要時執行
 `openspec init --language zh-TW`（同時安裝 openspec-* skills），並補齊 flow 需要的
@@ -63,3 +75,36 @@
 - **討論自由，交付物一致。** 探索、架構評估與壓力測試的結論，都在確認後回填 OpenSpec artifacts。
 - **實作與規劃保持同步。** 發現規格偏差時先暫停、探索並更新規劃；未知或不穩定的失敗先建立可重現的診斷回路。
 - **驗收與整合分離。** `flow-apply` 的 checkpoint 只保存實作；`flow-verify` 與 `flow-finish` 皆由使用者另行明確觸發。
+- **設定集中在專案。** 所有 flow 設定只放 `openspec/config.yaml`；commit 訊息依 `flow.commit`（專案的 commit skill 或格式）產生，不寫死在 skill 裡，被 hook 擋下時不得繞過。
+- **push 與整合由使用者決定。** apply 與 verify 不主動 push，留給使用者先看 diff；finish 每次詢問要本地合併、建立 PR 或保留分支，不綁定 GitHub。
+- **review 結論由使用者決定。** 每條 finding 附建議（改 code、改 spec、兩者或不處理），使用者回覆前不修改任何內容。
+
+## 更新日誌
+
+### 2026-11-03
+
+**新增**
+- `flow-init`：檢查 OpenSpec CLI 與 Matt Pocock skills、需要時執行 `openspec init --language zh-TW`，草擬 `config.yaml` 的 context／rules／operations 與 `flow.commit`，列出「現況 → 建議」差異後才寫入；可重複執行。
+- 所有 flow skill 開場加上執行前檢查：專案未初始化或缺少 `flow.commit` 時停下並建議 `/flow-init`，不自行建立 `openspec/`。
+- `flow-verify`：code-review findings 列成編號清單附建議，由使用者逐條決定；改變行為的 finding 先用 `openspec-update-change` 更新 artifacts 再改 code。
+- `flow-verify`：新增 `.flow.yaml` 的 `verify_progress` 快照，中斷後若程式碼未變可只跑剩下的項目。
+- `flow-finish`：發現未提交的驗收修正時，提議依 commit 規則提交後繼續（預設），不再直接停止。
+
+**變更**
+- commit 訊息改依 `openspec/config.yaml` 的 `flow.commit` 產生，移除寫死的訊息；被 commit-msg hook 擋下時依提示修正重試一次，不使用 `--no-verify`。
+- `flow-finish` 的整合步驟改為自有選單（本地合併／建立 PR／保留分支，預設保留），不再依賴 superpowers；只在 GitHub／GitLab 且有 CLI 時呼叫 `gh`／`glab`，其他主機（如 Bitbucket）改用 git 判斷是否已合併，PR 則提供 push 輸出的網址。
+- `flow-finish` 本地合併後，只有 base 分支在驗收後有新 commit 時才重跑測試；測試指令快取在 `flow.verify_commands.test`，不得串接 `rm -rf`。
+- `flow-conventions` 由 `conventions.md` 改為 `user-invocable: false` 的 skill；驗收專屬規則移到 `flow-verify/references/verify-tools.md`，分支命名移到 `flow-apply`。
+- 跨檔案引用改用章節名稱，不再使用章節編號。
+- 範例改用通用名稱（如 `android-unit-testing`、`team-code-review`）。
+
+**移除**
+- README 中已過時的流程圖（待重畫）。
+
+### 2026-08-31
+
+- 同步最新的 workflow skills，並更新流程圖。
+
+### 2026-08-09
+
+- 首次發布 OpenSpec Flow skills。
