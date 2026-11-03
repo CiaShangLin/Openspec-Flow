@@ -2,18 +2,15 @@
 
 以 [OpenSpec](https://github.com/Fission-AI/OpenSpec) 為文件與任務引擎的流程編排 skills。它將需求討論、實作、驗收與收尾串為一致的 change 生命週期，並補足分支、worktree、checkpoint、驗收紀錄及收尾整合等專案慣例。
 
-```text
-/flow-init（每個專案一次）
-     ↓
-/flow-discuss → /flow-apply → /flow-verify → /flow-finish
-   規劃與建檔      建工作區與實作    自動化驗收       歸檔與整合
-```
+![OpenSpec Flow 總覽：flow-init 導入後，依序經過 discuss、apply、verify、finish 四個階段，各自委派 openspec 與其他 skills](assets/medium/openspec-flow-overview.png)
 
 這是個人 workflow 擴充，不是 OpenSpec 的官方建議流程。各 skills 會共用
 [`flow-conventions`](flow-conventions/SKILL.md) skill（`user-invocable: false`）的提問協定、
 `.flow.yaml` 狀態格式、commit 規則與錯誤處理；驗收專屬規則在 `flow-verify/references/`。
 
 ## 內容
+
+![flow 各階段步驟：橘色為需要使用者決定的關卡](assets/medium/openspec-flow-skill-map.png)
 
 | 目錄 | 用途 |
 | --- | --- |
@@ -41,6 +38,8 @@
 | 不確定該走哪個流程 | `/flow-help` |
 
 `flow-discuss` 中的需求釐清維持自由對話；建立 artifacts、切換路線、提交或推送等決策則會明確詢問。所有 OpenSpec artifacts 一律以繁體中文（zh-TW）撰寫。
+
+![flow-discuss 路線：依上下文建議探索、架構評估、建立或更新 change，經 Review loop 定稿後交給 flow-apply](assets/medium/openspec-flow-routing.png)
 
 ## 安裝
 
@@ -99,9 +98,7 @@ flow 不依賴 superpowers。
 - `flow-conventions` 由 `conventions.md` 改為 `user-invocable: false` 的 skill；驗收專屬規則移到 `flow-verify/references/verify-tools.md`，分支命名移到 `flow-apply`。
 - 跨檔案引用改用章節名稱，不再使用章節編號。
 - 範例改用通用名稱（如 `android-unit-testing`、`team-code-review`）。
-
-**移除**
-- README 中已過時的流程圖（待重畫）。
+- 重畫 README 的三張流程圖（總覽、`flow-discuss` 路線、各階段步驟），補上 `flow-init`，並對齊目前 `flow-apply`、`flow-verify`、`flow-finish` 的步驟與決策點。
 
 ### 2026-08-31
 
