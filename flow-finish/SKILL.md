@@ -95,10 +95,17 @@ finish:
 主 spec 路徑 `openspec/specs/<capability>/spec.md`，記為 `SYNCED_SPECS`；任何路徑無法安全
 映射時停止，不猜測。
 
-- 任一 artifact 未完成、或 tasks 有 `- [ ]` → 依提問協定單選顯示未完成項目：
+- 任一 artifact 未完成、或 tasks 有 `- [ ]` → 依提問協定單選顯示未完成項目（tasks 逐條列出）：
   1. 仍然同步並歸檔
-  2. 停止收尾（預設）
-  只有明確選 1 才繼續。
+  2. 剩餘 tasks 已完成（例如已實機測試），幫我勾選並 commit 後繼續收尾
+  3. 停止收尾（預設）
+  只有明確選 1 或 2 才繼續。
+  - 選項 2 只在**未完成項目全是 tasks** 時列出；有 artifact 未完成時不提供（artifact
+    缺漏無法靠勾選補上）。
+  - 選 2 → 只把上方列出的 `- [ ]` 改成 `- [x]`，不改動其他內容；精確 `git add`
+    該 tasks 檔案，依 flow-conventions 的「commit 規則」 commit（意圖：標記 `<name>`
+    剩餘 tasks 已完成）。本步不 push，push 在第 5 步。commit 失敗就停止。
+    完成後重新讀 tasks 確認已無 `- [ ]`，再往下執行 archive。
 - 全部完成 → 不提問。
 
 沒有停止時，直接執行：
@@ -263,6 +270,7 @@ flow 不假設遠端是 GitHub。需要和遠端主機互動時，先以
 - **NEVER** 以 `verified_at` hash 差異阻擋、警告或要求重跑驗收。
 - **NEVER** 未經確認就把工作區變更納入 commit，或納入歸屬不明的檔案。
 - **NEVER** 在 tasks/artifacts 未完成時靜默 archive；預設必須停止。
+- **NEVER** 未經用戶選擇「勾選並 commit」就自行把 `- [ ]` 改成 `- [x]`，也不得勾選清單以外的項目。
 - **NEVER** 在 archive、commit、push、合併後測試或 base branch push 失敗後繼續整合或清理。
 - **NEVER** 使用 `git add .`、force-push 或為了清理而自行 `git worktree remove --force`。
 - **NEVER** 寫死 commit 訊息；一律依 flow-conventions 的「commit 規則」。

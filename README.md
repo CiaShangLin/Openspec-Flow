@@ -19,9 +19,9 @@
 | --- | --- |
 | `flow-init/` | 導入與重新檢查：確認依賴、必要時執行 `openspec init`，補齊 `config.yaml` 的 context／rules／operations 與 commit 格式；可重複執行，只補差異。 |
 | `flow-discuss/` | 以自由對話理解需求，建議 explore、架構評估、proposal 或既有 change 更新路線；確認後才建立或修改 OpenSpec artifacts。 |
-| `flow-apply/` | 依 change 類型建立分支或 worktree，委派 `openspec-apply-change` 實作 tasks；遇到規格偏差或未知異常時先探索／診斷，完成後可建立語意化 checkpoint。 |
+| `flow-apply/` | 依 change 類型建立分支或 worktree（可帶 `-b`／`-w` 直接指定，免問），委派 `openspec-apply-change` 實作 tasks；遇到規格偏差或未知異常時先探索／診斷，完成後可建立語意化 checkpoint。 |
 | `flow-verify/` | 依使用者選定項目執行單元測試、文件註解與 code review，每項派獨立 subagent 並帶入對應 effort，並記錄本輪驗收結果。review findings 列成編號清單附建議（改 code／改 spec+code／改 spec／不處理），由使用者逐條決定後才修正；中斷後若程式碼未變，可只跑剩下的項目。 |
-| `flow-finish/` | 檢查驗收、提交剩餘的驗收修正、同步 delta specs、archive change 並推送，最後每次由使用者決定本地合併、建立 PR 或保留分支；不限 GitHub，中斷後可續跑。 |
+| `flow-finish/` | 檢查驗收、提交剩餘的驗收修正、tasks 未全勾時可選擇代為勾選並 commit 後繼續、同步 delta specs、archive change 並推送，最後每次由使用者決定本地合併、建立 PR 或保留分支；不限 GitHub，中斷後可續跑。 |
 | `flow-note/` | 開發途中的備忘錄，記到 `openspec/backlog.md`，不自動整合進其他 skill。 |
 | `flow-help/` | 導覽入口，說明各 skill 用途、觸發時機與驗收工具設定速查。 |
 | `flow-conventions/` | 所有 flow skill 共用的規範（`user-invocable: false`，由其他 flow skill 載入）：提問協定、`.flow.yaml` 結構、`config.yaml` 的 `flow:` 區塊、執行前檢查、commit 規則、錯誤處理原則。分支命名在 `flow-apply`，平台偵測與驗收工具委派在 `flow-verify/references/verify-tools.md`。 |
@@ -34,7 +34,7 @@
 | --- | --- |
 | 專案第一次使用 flow，或 flow 提示缺少設定 | `/flow-init` |
 | 有想法、需求、bug 或重構要規劃 | `/flow-discuss` |
-| 已有 change，要開始或繼續實作 | `/flow-apply <change-name>` |
+| 已有 change，要開始或繼續實作 | `/flow-apply <change-name> [-b \| -w]` |
 | tasks 完成，要跑驗收 | `/flow-verify <change-name>` |
 | 驗收後要 archive、合併或建立 PR | `/flow-finish <change-name>` |
 | 想記下之後再處理的事項 | `/flow-note` |
@@ -84,6 +84,8 @@ flow 不依賴 superpowers。
 ### 2026-11-03
 
 **新增**
+- `flow-apply`：支援 `-b`（branch）／`-w`（worktree）參數，帶參數時跳過工作區類型提問；其餘決策點照常詢問，與 `.flow.yaml` 已記錄的工作區不符時先停下確認。
+- `flow-finish`：tasks 未全勾時新增「剩餘 tasks 已完成，幫我勾選並 commit 後繼續收尾」選項，適用已實機測試但未回報的情況；有 artifact 未完成時不提供。
 - `flow-init`：檢查 OpenSpec CLI 與 Matt Pocock skills、需要時執行 `openspec init --language zh-TW`，草擬 `config.yaml` 的 context／rules／operations 與 `flow.commit`，列出「現況 → 建議」差異後才寫入；可重複執行。
 - 所有 flow skill 開場加上執行前檢查：專案未初始化或缺少 `flow.commit` 時停下並建議 `/flow-init`，不自行建立 `openspec/`。
 - `flow-verify`：code-review findings 列成編號清單附建議，由使用者逐條決定；改變行為的 finding 先用 `openspec-update-change` 更新 artifacts 再改 code。

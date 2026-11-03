@@ -77,7 +77,7 @@ flow 系列會在多種 AI 環境執行（Claude Code、Codex 等），各環境
 | 適用（套協定） | 不適用（維持自由對話） |
 |---|---|
 | flow-discuss：建議路線是否採用、type 三選一、artifact review loop（定稿／釐清／壓力測試／重新評估）、文件 commit 後是否 push | 「這個功能要解決什麼問題？」等需求釐清、explore／架構評估／grill-me 內部的追問 |
-| flow-apply：branch／worktree、worktree 建立後如何進入（同 session 切過去／新開 session）、分支已存在怎麼辦、是否同步文件、tasks 完成後要調整／建立 checkpoint／結束、commit 後是否 push、無 upstream 時是否設定並 push | 人工 review 後要調整的具體內容 |
+| flow-apply：branch／worktree（帶 `-b`／`-w` 參數時免問）、worktree 建立後如何進入（同 session 切過去／新開 session）、分支已存在怎麼辦、是否同步文件、tasks 完成後要調整／建立 checkpoint／結束、commit 後是否 push、無 upstream 時是否設定並 push | 人工 review 後要調整的具體內容 |
 | flow-verify：開場項目、找不到工具時的二選一 | 需求細節的來回釐清 |
 | flow-finish：驗收缺項是否繼續、未提交變更是否提交後繼續、未完成 tasks/artifacts 是否歸檔、合併／PR／保留、是否已合併、是否清理 | |
 | flow-init：是否執行 `openspec init`、要設定的 AI 工具、設定差異套用方式、commit 格式確認、選用 setup 是否執行、是否提交 | `context` 內容的來回補充 |

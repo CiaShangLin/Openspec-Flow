@@ -1,6 +1,7 @@
 ---
 name: flow-apply
 description: Use when 使用者要求開始或繼續實作 OpenSpec change，例如「開始實作」、「實作這個 change」、「apply」或使用 /flow-apply。
+argument-hint: "[change-name] [-b | -w]"
 ---
 
 # flow-apply：建立工作區並實作
@@ -11,6 +12,24 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
 開始前先載入 `flow-conventions` skill（以 plugin 安裝時名稱帶前綴，例如 `<plugin>:flow-conventions`）取得共用規範；環境沒有 Skill 工具時，改讀同層目錄的
 `../flow-conventions/SKILL.md`，且必須讀完整份。**本 skill 的所有決策點提問一律依 flow-conventions 的「提問協定」
 提問協定呈現與解析**：選項列全、標出預設、聲明單／多選、允許自然語言覆寫。
+
+## 參數
+
+```
+/flow-apply [change-name] [-b | -w]
+```
+
+| 參數 | 意義 |
+|---|---|
+| `change-name` | 要實作的 change；省略時依步驟 1 自動選或列出讓用戶挑 |
+| `-b` | 工作區使用 **branch**，跳過「要用 branch 還是 worktree？」提問 |
+| `-w` | 工作區使用 **worktree**，跳過「要用 branch 還是 worktree？」提問 |
+
+- 旗標與 change 名稱順序不拘；也接受 `--branch`／`--worktree` 長寫法。
+- `-b` 與 `-w` 同時出現 → 視為衝突，依提問協定（單選）詢問要用哪一個，不自行擇一。
+- 旗標**只**取代工作區類型那一題；其餘決策點照常詢問（`worktree_base` 未設定時的路徑、
+  worktree 建立後如何進入、分支已存在怎麼辦、未提交變更等）。
+- 無法辨識的旗標（如 `-x`）→ 明確告知不支援並列出可用旗標，不猜測意圖。
 
 ## 分支命名規範
 
@@ -59,10 +78,15 @@ description: Use when 使用者要求開始或繼續實作 OpenSpec change，例
   - 輸出為空（已 push）→ 直接跳到「建立分支/worktree」步驟。
   - 輸出不為空（尚未 push）→ 重新執行 `git push`，失敗一樣視為錯誤中止
     （處理方式同下方「寫入 metadata 並 commit + push」步驟 4）。
+- 此時若有帶 `-b`／`-w`，且與 `.flow.yaml` 已記錄的 `workspace` 不同 → 停下告知
+  「此 change 已設定為 <workspace>，與參數 <旗標> 不符」，依提問協定（單選）詢問
+  「沿用已記錄的 <workspace>（預設）／中止」；不自行改寫 metadata。
 
 決定工作區（僅首次執行，跳過冪等性檢查判定為已完成的情況）：
 
-依提問協定（單選）問：
+- 有帶 `-b` → 直接採用 **branch**，宣告「依參數 -b 使用 branch」，不提問。
+- 有帶 `-w` → 直接採用 **worktree**，宣告「依參數 -w 使用 worktree」，不提問。
+- 都沒帶 → 依提問協定（單選）問：
 
 > 「要用 branch 還是 worktree？」（預設：branch）
 
@@ -289,6 +313,7 @@ checkpoint 的 commit／push 狀態，以及 branch 或 worktree 位置。接著
 - **NEVER 在有未提交變更的工作目錄直接建分支**——先停下詢問（commit / stash / 放棄由用戶決定），否則變更會被帶到新分支造成混淆。
 - **NEVER 自動刪除或覆蓋既有分支與 worktree 目錄**——名稱衝突一律先問。
 - **NEVER 猜測 change 類型**——`.flow.yaml` 缺 `type` 就問，猜錯前綴會污染分支歷史。
+- **NEVER 在帶了 `-b`／`-w` 時仍詢問 branch 或 worktree**——參數就是用戶的答案；但也不得把旗標延伸解讀成其他決策點的答案。
 - **NEVER 丟開放式問題取代決策點提問**——選項必須列全並標出預設，見 flow-conventions 的「提問協定」。
 - **NEVER 靜默跳過 git 指令失敗**（分支衝突、worktree 目錄已存在等）——明確報錯並停下。
 - **NEVER 在 metadata push 失敗時仍繼續建立分支/worktree**——push 失敗一律視為錯誤中止，避免 metadata 只存在本地、跟遠端脫節。
